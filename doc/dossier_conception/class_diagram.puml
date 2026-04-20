@@ -1,0 +1,556 @@
+﻿@startuml
+title LeadelMarche - Diagramme de classes global (MVC + metier + persistance)
+
+skinparam classAttributeIconSize 0
+skinparam dpi 300
+skinparam linetype ortho
+skinparam ranksep 35
+skinparam nodesep 25
+top to bottom direction
+scale max 4200 width
+
+package "app" {
+  class ApplicationContext <<Singleton>> {
+    - inventoryService: InventoryService
+    - staffService: StaffService
+    - customerService: CustomerService
+    - salesService: SalesService
+    - promoService: PromotionService
+    - statsService: StatisticsService
+    - database: TextFileDatabase
+    - posControllers: List<POSController>
+    + createPOSController(posName: String): POSController
+  }
+}
+
+package "common" {
+  interface Activable {
+    + isActive(): boolean
+    + setActive(active: boolean)
+  }
+
+  abstract class BaseEntity <<Entity>> {
+    + id: String
+    + active: boolean
+    + createdAt: LocalDateTime
+    + updatedAt: LocalDateTime
+  }
+
+  class Address {
+    + line1: String
+    + city: String
+    + postalCode: String
+    + country: String
+  }
+
+  class SearchNormalizer <<Utility>> {
+    + normalize(text: String): String
+    + containsNormalized(source: String, partial: String): boolean
+  }
+}
+
+package "domain.inventory" {
+  enum ProductType {
+    ALIMENTAIRE
+    MEDECINE
+    ELECTRONIQUE
+    AUTRE
+  }
+
+  class Product <<Entity>> {
+    + sku: String
+    + barcode: String
+    + name: String
+    + description: String
+    + type: ProductType
+    + unitPriceHT: BigDecimal
+    + vatPercent: BigDecimal
+    + countryOfOrigin: String
+    + supplierName: String
+    + weighted: boolean
+    + soldByPieceWithoutBarcode: boolean
+    + expectedWeightKg: BigDecimal
+    + lowStockThresholdPercent: BigDecimal
+  }
+
+  class InventoryItem <<Entity>> {
+    + productId: String
+    + storeId: String
+    + quantity: BigDecimal
+    + reservedQuantity: BigDecimal
+    + availableQuantity(): BigDecimal
+  }
+
+  class StockAlert <<Entity>> {
+    + productId: String
+    + storeId: String
+    + thresholdPercent: BigDecimal
+    + triggeredAt: LocalDateTime
+    + acknowledged: boolean
+  }
+
+  class Store <<Entity>> {
+    + storeId: String
+    + name: String
+    + address: Address
+    + openingHours: String
+  }
+}
+
+package "domain.people" {
+  enum ContractType {
+    CDI_35H
+    CDI_ETUDIANT
+    CDD
+    INTERIM
+  }
+
+  class Employee <<Entity>> {
+    + badgeNumber: String
+    + firstName: String
+    + lastName: String
+    + homeAddress: Address
+    + workAddress: Address
+    + role: String
+    + supervisorBadge: String
+  }
+
+  class WorkContract <<Entity>> {
+    + employeeId: String
+    + contractType: ContractType
+    + weeklyHoursMin: int
+    + weeklyHoursMax: int
+    + startDate: LocalDate
+    + endDate: LocalDate
+  }
+
+  class LeaveRequest <<Entity>> {
+    + employeeId: String
+    + startDate: LocalDate
+    + endDate: LocalDate
+    + reason: String
+    + status: String
+  }
+
+  class Shift <<Entity>> {
+    + employeeId: String
+    + storeId: String
+    + day: LocalDate
+    + startTime: LocalTime
+    + endTime: LocalTime
+    + lunchBreakMinutes: int
+    + shortBreaksCount: int
+  }
+
+  class StaffingAlert <<Entity>> {
+    + storeId: String
+    + periodStart: LocalDate
+    + periodEnd: LocalDate
+    + missingHeadcount: int
+    + createdAt: LocalDateTime
+  }
+}
+
+package "domain.customer" {
+  class LoyaltyAccount <<Entity>> {
+    + cardNumber: String
+    + potBalance: BigDecimal
+    + createdAt: LocalDateTime
+  }
+
+  class Customer <<Entity>> {
+    + firstName: String
+    + lastName: String
+    + email: String
+    + postalCode: String
+    + loyaltyCardNumber: String
+    + isAnonymous: boolean
+  }
+}
+
+package "domain.sales" {
+  enum PaymentMode {
+    CASH
+    CARD
+    MOBILE
+    VOUCHER
+  }
+
+  class POS <<Entity>> {
+    + posId: String
+    + name: String
+    + storeId: String
+    + fastCheckoutEnabled: boolean
+  }
+
+  class Sale <<Entity>> {
+    + saleNumber: String
+    + posId: String
+    + storeId: String
+    + cashierBadge: String
+    + customerId: String
+    + soldAt: LocalDateTime
+    + subTotalHT: BigDecimal
+    + totalVat: BigDecimal
+    + totalTTC: BigDecimal
+    + paymentMode: PaymentMode
+    + status: String
+    + recalculateTotals()
+  }
+
+  class SaleLine <<Entity>> {
+    + saleId: String
+    + productId: String
+    + unitPriceHT: BigDecimal
+    + quantity: BigDecimal
+    + weightKg: BigDecimal
+    + lineVat: BigDecimal
+    + lineTotal: BigDecimal
+    + discountAmount: BigDecimal
+  }
+
+  class Receipt <<Entity>> {
+    + saleId: String
+    + textBody: String
+    + printed: boolean
+    + emailed: boolean
+    + customerEmail: String
+  }
+}
+
+package "domain.promotion" {
+  enum PromotionEffect {
+    IMMEDIATE_DISCOUNT
+    LOYALTY_POT
+  }
+
+  abstract class Promotion <<Entity>> {
+    + name: String
+    + renewable: boolean
+    + startDate: LocalDate
+    + endDate: LocalDate
+    + effect: PromotionEffect
+    + appliesTo(productId: String): boolean
+    + computeDiscount(lines: List<SaleLine>): BigDecimal
+  }
+
+  class BuyXGetYPromotion {
+    + xBought: int
+    + yFree: int
+  }
+
+  class PercentOnNthPromotion {
+    + nthItem: int
+    + percentDiscount: BigDecimal
+  }
+}
+
+package "domain.statistics" {
+  interface StatisticProvider {
+    + key(): String
+    + compute(period: DateRange): StatisticResult
+  }
+
+  class DateRange {
+    + startDate: LocalDate
+    + endDate: LocalDate
+  }
+
+  class StatisticResult {
+    + title: String
+    + value: BigDecimal
+    + asTable(): String
+    + asChartData(): String
+  }
+}
+
+package "service" {
+  class InventoryService <<Service>> {
+    + createProduct(product: Product)
+    + updateProduct(product: Product)
+    + deactivateProduct(productId: String)
+    + addStock(productId: String, storeId: String, qty: BigDecimal)
+    + removeStock(productId: String, storeId: String, qty: BigDecimal)
+    + getStockAcrossStores(productId: String): List<InventoryItem>
+    + detectLowStock(): List<StockAlert>
+  }
+
+  class StaffService <<Service>> {
+    + createEmployee(employee: Employee)
+    + updateEmployee(employee: Employee)
+    + deactivateEmployee(employeeId: String)
+    + requestLeave(leave: LeaveRequest)
+    + optimizeSchedule(storeId: String, week: LocalDate): List<Shift>
+    + forecastUnderstaffing(monthsAhead: int): List<StaffingAlert>
+  }
+
+  class CustomerService <<Service>> {
+    + createCustomer(customer: Customer)
+    + updateCustomer(customer: Customer)
+    + deactivateCustomer(customerId: String)
+    + findOrAnonymous(cardNumber: String): Customer
+    + creditLoyalty(cardNumber: String, amount: BigDecimal)
+  }
+
+  class PromotionService <<Service>> {
+    + createPromotion(promo: Promotion)
+    + updatePromotion(promo: Promotion)
+    + deactivatePromotion(promoId: String)
+    + getActivePromotions(at: LocalDate): List<Promotion>
+    + applyPromotions(sale: Sale): BigDecimal
+  }
+
+  class FastCheckoutService <<Service>> {
+    + validateScannedWeight(product: Product, measuredKg: BigDecimal): boolean
+    + requestCashierHelp(posId: String, reason: String)
+  }
+
+  class ReceiptService <<Service>> {
+    + buildReceipt(sale: Sale): Receipt
+    + print(receipt: Receipt)
+    + email(receipt: Receipt, email: String)
+  }
+
+  class SalesService <<Service>> {
+    + startSale(posId: String, cashierBadge: String, customerCard: String): Sale
+    + addLineByBarcode(saleId: String, barcode: String, qty: BigDecimal)
+    + addWeightedLine(saleId: String, productType: ProductType, weightKg: BigDecimal)
+    + reduceLineQuantity(saleId: String, lineId: String, qty: BigDecimal)
+    + removeLine(saleId: String, lineId: String)
+    + changePaymentMode(saleId: String, mode: PaymentMode)
+    + finalizeSale(saleId: String): Receipt
+  }
+
+  class StatisticsService <<Service>> {
+    + listAvailableStats(): List<String>
+    + compute(statKey: String, period: DateRange): StatisticResult
+    + compare(statKey: String, p1: DateRange, p2: DateRange): List<StatisticResult>
+    + registerCustom(provider: StatisticProvider)
+    + sendByEmail(result: StatisticResult, email: String)
+  }
+
+  class SeedDataService <<Service>> {
+    + loadDefaultData(): void
+  }
+}
+
+package "persistence" {
+  interface Repository<T> {
+    + create(entity: T)
+    + update(entity: T)
+    + findById(id: String): T
+    + findAll(activeOnly: boolean): List<T>
+    + searchByName(partial: String): List<T>
+  }
+
+  class TextFileDatabase <<Singleton>> {
+    + basePath: String
+    + readLines(fileName: String): List<String>
+    + writeLines(fileName: String, lines: List<String>)
+    + appendLine(fileName: String, line: String)
+  }
+
+  class ProductRepository
+  class InventoryRepository
+  class EmployeeRepository
+  class ContractRepository
+  class LeaveRepository
+  class ShiftRepository
+  class CustomerRepository
+  class LoyaltyRepository
+  class SaleRepository
+  class SaleLineRepository
+  class ReceiptRepository
+  class PromotionRepository
+  class StatisticConfigRepository
+}
+
+package "ui.mvc" {
+  class MainMenuView <<View>>
+  class MainMenuController <<Controller>> {
+    + openStockModule()
+    + openStaffModule()
+    + openCustomerModule()
+    + openPOSModule(posId: String)
+    + openStatsModule()
+  }
+
+  class StockView <<View>>
+  class StockController <<Controller>>
+
+  class StaffView <<View>>
+  class StaffController <<Controller>>
+
+  class CustomerView <<View>>
+  class CustomerController <<Controller>>
+
+  class POSView <<View>>
+  class POSController <<Controller>> {
+    + startSale()
+    + scanBarcode()
+    + addWeightedProduct()
+    + callForHelp()
+    + finalizeSale()
+  }
+
+  class StatsView <<View>>
+  class StatsController <<Controller>>
+}
+
+BaseEntity ..|> Activable
+
+Product --|> BaseEntity
+InventoryItem --|> BaseEntity
+StockAlert --|> BaseEntity
+Store --|> BaseEntity
+
+Employee --|> BaseEntity
+WorkContract --|> BaseEntity
+LeaveRequest --|> BaseEntity
+Shift --|> BaseEntity
+StaffingAlert --|> BaseEntity
+
+Customer --|> BaseEntity
+LoyaltyAccount --|> BaseEntity
+
+POS --|> BaseEntity
+Sale --|> BaseEntity
+SaleLine --|> BaseEntity
+Receipt --|> BaseEntity
+
+Promotion --|> BaseEntity
+BuyXGetYPromotion --|> Promotion
+PercentOnNthPromotion --|> Promotion
+
+Store "1" o-- "many" POS
+Store "1" o-- "many" InventoryItem
+Product "1" o-- "many" InventoryItem
+Employee "0..1" --> "0..*" Employee : supervisor
+Employee "1" o-- "1" WorkContract
+Employee "1" o-- "many" LeaveRequest
+Employee "1" o-- "many" Shift
+Customer "0..1" o-- "1" LoyaltyAccount
+Sale "1" o-- "1..*" SaleLine
+Sale "1" --> "1" POS
+Sale "1" --> "1" Employee : cashier
+Sale "1" --> "1" Customer
+Receipt "1" --> "1" Sale
+
+Promotion "0..*" --> "0..*" Product
+PromotionService --> PromotionRepository
+PromotionService --> LoyaltyRepository
+PromotionService --> SaleLine
+
+InventoryService --> ProductRepository
+InventoryService --> InventoryRepository
+InventoryService --> StockAlert
+
+StaffService --> EmployeeRepository
+StaffService --> ContractRepository
+StaffService --> LeaveRepository
+StaffService --> ShiftRepository
+
+CustomerService --> CustomerRepository
+CustomerService --> LoyaltyRepository
+
+SalesService --> SaleRepository
+SalesService --> SaleLineRepository
+SalesService --> ProductRepository
+SalesService --> InventoryService
+SalesService --> PromotionService
+SalesService --> ReceiptService
+SalesService --> CustomerService
+SalesService --> FastCheckoutService
+
+ReceiptService --> ReceiptRepository
+
+StatisticsService --> StatisticConfigRepository
+StatisticsService --> StatisticProvider
+StatisticsService --> SaleRepository
+StatisticsService --> CustomerRepository
+StatisticsService --> LeaveRepository
+
+Repository <|.. ProductRepository
+Repository <|.. InventoryRepository
+Repository <|.. EmployeeRepository
+Repository <|.. ContractRepository
+Repository <|.. LeaveRepository
+Repository <|.. ShiftRepository
+Repository <|.. CustomerRepository
+Repository <|.. LoyaltyRepository
+Repository <|.. SaleRepository
+Repository <|.. SaleLineRepository
+Repository <|.. ReceiptRepository
+Repository <|.. PromotionRepository
+Repository <|.. StatisticConfigRepository
+
+Repository ..> TextFileDatabase : persistance fichier texte
+
+MainMenuController --> StockController
+MainMenuController --> StaffController
+MainMenuController --> CustomerController
+MainMenuController --> POSController
+MainMenuController --> StatsController
+
+StockController --> InventoryService
+StaffController --> StaffService
+CustomerController --> CustomerService
+POSController --> SalesService
+POSController --> FastCheckoutService
+StatsController --> StatisticsService
+
+MainMenuView --> MainMenuController
+StockView --> StockController
+StaffView --> StaffController
+CustomerView --> CustomerController
+POSView --> POSController
+StatsView --> StatsController
+
+ApplicationContext --> MainMenuController
+ApplicationContext --> TextFileDatabase
+ApplicationContext --> SeedDataService
+
+MainMenuController -[hidden]- StockController
+StockController -[hidden]- StaffController
+StaffController -[hidden]- CustomerController
+CustomerController -[hidden]- POSController
+POSController -[hidden]- StatsController
+
+ProductRepository -[hidden]- InventoryRepository
+InventoryRepository -[hidden]- EmployeeRepository
+EmployeeRepository -[hidden]- ContractRepository
+ContractRepository -[hidden]- LeaveRepository
+LeaveRepository -[hidden]- ShiftRepository
+ShiftRepository -[hidden]- CustomerRepository
+CustomerRepository -[hidden]- LoyaltyRepository
+LoyaltyRepository -[hidden]- SaleRepository
+SaleRepository -[hidden]- SaleLineRepository
+SaleLineRepository -[hidden]- ReceiptRepository
+ReceiptRepository -[hidden]- PromotionRepository
+PromotionRepository -[hidden]- StatisticConfigRepository
+
+ApplicationContext -[hidden]down- MainMenuController
+MainMenuController -[hidden]down- SalesService
+SalesService -[hidden]down- SaleRepository
+SaleRepository -[hidden]right- TextFileDatabase
+
+note right of BaseEntity
+DELETE logique:
+les donnees restent en base texte,
+on passe seulement active=false.
+end note
+
+note right of SearchNormalizer
+Recherche partielle:
+- ignore accents
+- ignore maj/min
+- "em" => Emilie, Emma, Emmanuelle
+end note
+
+note right of SeedDataService
+Charge au demarrage un jeu de donnees
+minimum de 10 enregistrements
+par module principal.
+end note
+
+@enduml

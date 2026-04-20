@@ -1,0 +1,70 @@
+@startuml
+title LeadelMarche - Diagramme de communication (process de vente complet)
+
+skinparam dpi 300
+skinparam linetype ortho
+skinparam ranksep 55
+skinparam nodesep 40
+top to bottom direction
+scale max 2200 width
+
+object "Caissier/Caisse rapide" as User
+object "POSView" as View
+object "POSController" as Ctrl
+object "SalesService" as Sales
+object "CustomerService" as Cust
+object "InventoryService" as Stock
+object "PromotionService" as Promo
+object "FastCheckoutService" as Fast
+object "SaleRepository" as SaleRepo
+object "ReceiptService" as Receipt
+object "ReceiptRepository" as ReceiptRepo
+object "Printer/EmailGateway" as Out
+
+' Grille de placement (stable et compacte)
+User -[hidden]down- View
+View -[hidden]down- Ctrl
+Ctrl -[hidden]right- Sales
+Sales -[hidden]right- Cust
+Cust -[hidden]right- Stock
+Stock -[hidden]right- Promo
+Promo -[hidden]right- Fast
+Sales -[hidden]down- SaleRepo
+SaleRepo -[hidden]right- Receipt
+Receipt -[hidden]right- ReceiptRepo
+ReceiptRepo -[hidden]right- Out
+
+User -> View : 1 start
+View -> Ctrl : 2 commandeUI
+Ctrl -> Sales : 3 gererPanier
+Sales -> Cust : 4 identifierClient
+Sales -> Stock : 5 reserverStock
+Sales -> Promo : 6 calculerPromos
+Ctrl -> Fast : 7 controleRapide
+Sales -> SaleRepo : 8 saveVente
+Sales -> Stock : 9 decrementerStock
+Sales -> Receipt : 10 genererTicket
+Receipt -> ReceiptRepo : 11 saveTicket
+Receipt -> Out : 12 printOrEmail
+Sales -> Ctrl : 13 retourResultat
+Ctrl -> View : 14 afficherResultat
+View -> User : 15 ticketClient
+
+note right of Fast
+Legende detaillee:
+1-2  : demarrage vente (badge + point de vente)
+3    : ajout/modification panier
+4    : client carte fidelite ou Anonyme
+5-6  : stock + promotions (immediate/cagnotte)
+7    : caisse rapide (poids + appel aide)
+8-12 : finalisation + ticket
+13-15: confirmation de vente
+end note
+
+note bottom
+Le diagramme reste un diagramme de communication UML:
+objets + messages numerotes.
+Le detail est reporte dans la legende pour eviter la superposition.
+end note
+
+@enduml
