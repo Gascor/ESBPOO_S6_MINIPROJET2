@@ -1,11 +1,13 @@
 package com.leadelmarche.ui.mvc.controller;
 
+import com.leadelmarche.domain.inventory.InventoryItem;
 import com.leadelmarche.domain.inventory.Product;
 import com.leadelmarche.domain.inventory.ProductType;
 import com.leadelmarche.service.InventoryService;
 import com.leadelmarche.ui.mvc.view.StockView;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import javax.swing.JOptionPane;
 
 public class StockController {
@@ -25,7 +27,10 @@ public class StockController {
 
     private void bindActions() {
         view.addProductButton().addActionListener(e -> addProduct());
+        view.updateProductButton().addActionListener(e -> updateProduct());
+        view.deactivateProductButton().addActionListener(e -> deactivateProduct());
         view.restockButton().addActionListener(e -> restockProduct());
+        view.interStoreButton().addActionListener(e -> showInterStoreStock());
         view.refreshButton().addActionListener(e -> refreshProducts());
         view.searchButton().addActionListener(e -> searchProducts());
     }
@@ -61,9 +66,92 @@ public class StockController {
     private void restockProduct() {
         try {
             String productId = view.restockProductIdField().getText().trim();
+            String storeId = view.restockStoreIdField().getText().trim();
+            if (storeId.isBlank()) {
+                storeId = InventoryService.DEFAULT_STORE_ID;
+            }
             BigDecimal qty = parseBigDecimal(view.restockQtyField().getText(), BigDecimal.ZERO);
-            inventoryService.addStock(productId, InventoryService.DEFAULT_STORE_ID, qty);
+            inventoryService.addStock(productId, storeId, qty);
             refreshProducts();
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void updateProduct() {
+        try {
+            String productId = view.editProductIdField().getText().trim();
+            if (productId.isBlank()) {
+                throw new IllegalArgumentException("ID produit obligatoire pour la mise a jour");
+            }
+            Product product = inventoryService.findProductById(productId).orElseThrow(
+                () -> new IllegalStateException("Produit introuvable: " + productId)
+            );
+            if (!view.skuField().getText().trim().isBlank()) {
+                product.setSku(view.skuField().getText().trim());
+            }
+            if (!view.nameField().getText().trim().isBlank()) {
+                product.setName(view.nameField().getText().trim());
+            }
+            if (!view.barcodeField().getText().trim().isBlank()) {
+                product.setBarcode(view.barcodeField().getText().trim());
+            }
+            product.setType(ProductType.valueOf(view.typeCombo().getSelectedItem().toString()));
+            if (!view.priceField().getText().trim().isBlank()) {
+                product.setUnitPriceHT(parseBigDecimal(view.priceField().getText(), product.getUnitPriceHT()));
+            }
+            if (!view.vatField().getText().trim().isBlank()) {
+                product.setVatPercent(parseBigDecimal(view.vatField().getText(), product.getVatPercent()));
+            }
+            product.setWeighted(view.weightedBox().isSelected());
+            product.setSoldByPieceWithoutBarcode(view.pieceNoBarcodeBox().isSelected());
+            inventoryService.updateProduct(product);
+            refreshProducts();
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void deactivateProduct() {
+        try {
+            String productId = view.editProductIdField().getText().trim();
+            if (productId.isBlank()) {
+                throw new IllegalArgumentException("ID produit obligatoire pour la desactivation");
+            }
+            inventoryService.deactivateProduct(productId);
+            refreshProducts();
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void showInterStoreStock() {
+        try {
+            String productId = view.interStoreProductIdField().getText().trim();
+            if (productId.isBlank()) {
+                productId = view.editProductIdField().getText().trim();
+            }
+            if (productId.isBlank()) {
+                throw new IllegalArgumentException("Saisir un Product ID pour consulter les succursales");
+            }
+            List<InventoryItem> items = inventoryService.getStockAcrossStores(productId);
+            Optional<Product> product = inventoryService.findProductById(productId);
+            StringBuilder sb = new StringBuilder();
+            sb.append("STOCK INTER-SUCCURSALES\n");
+            sb.append("Produit: ").append(product.map(Product::getName).orElse("Inconnu")).append(" (").append(productId).append(")\n");
+            sb.append("Store | Quantite | Reserve | Disponible\n");
+            sb.append("-------------------------------------------------\n");
+            if (items.isEmpty()) {
+                sb.append("Aucune donnee inter-succursales pour ce produit.\n");
+            } else {
+                for (InventoryItem item : items) {
+                    sb.append(item.getStoreId()).append(" | ")
+                        .append(item.getQuantity()).append(" | ")
+                        .append(item.getReservedQuantity()).append(" | ")
+                        .append(item.availableQuantity()).append('\n');
+                }
+            }
+            view.outputArea().setText(sb.toString());
         } catch (Exception ex) {
             showError(ex);
         }
@@ -113,4 +201,3 @@ public class StockController {
         JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
     }
 }
-

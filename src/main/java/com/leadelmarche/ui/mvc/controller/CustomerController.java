@@ -23,6 +23,8 @@ public class CustomerController {
 
     private void bindActions() {
         view.addButton().addActionListener(e -> addCustomer());
+        view.updateButton().addActionListener(e -> updateCustomer());
+        view.deactivateButton().addActionListener(e -> deactivateCustomer());
         view.searchButton().addActionListener(e -> searchCustomers());
         view.refreshButton().addActionListener(e -> refreshCustomers());
     }
@@ -45,6 +47,56 @@ public class CustomerController {
 
     private void searchCustomers() {
         render(customerService.searchCustomers(view.searchField().getText()));
+    }
+
+    private void updateCustomer() {
+        try {
+            String customerId = view.editCustomerIdField().getText().trim();
+            if (customerId.isBlank()) {
+                throw new IllegalArgumentException("ID client obligatoire pour la mise a jour");
+            }
+            Customer customer = customerService.getById(customerId).orElseThrow(
+                () -> new IllegalStateException("Client introuvable: " + customerId)
+            );
+            if (!view.firstNameField().getText().trim().isBlank()) {
+                customer.setFirstName(view.firstNameField().getText().trim());
+            }
+            if (!view.lastNameField().getText().trim().isBlank()) {
+                customer.setLastName(view.lastNameField().getText().trim());
+            }
+            if (!view.cardField().getText().trim().isBlank()) {
+                customer.setLoyaltyCardNumber(view.cardField().getText().trim());
+            }
+            if (!view.emailField().getText().trim().isBlank()) {
+                customer.setEmail(view.emailField().getText().trim());
+            }
+            if (!view.postalField().getText().trim().isBlank()) {
+                customer.setPostalCode(view.postalField().getText().trim());
+            }
+            customerService.updateCustomer(customer);
+            refreshCustomers();
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void deactivateCustomer() {
+        try {
+            String customerId = view.editCustomerIdField().getText().trim();
+            if (customerId.isBlank()) {
+                throw new IllegalArgumentException("ID client obligatoire pour la desactivation");
+            }
+            Customer customer = customerService.getById(customerId).orElseThrow(
+                () -> new IllegalStateException("Client introuvable: " + customerId)
+            );
+            if (customer.isAnonymous()) {
+                throw new IllegalStateException("Le client Anonyme ne peut pas etre desactive.");
+            }
+            customerService.deactivateCustomer(customerId);
+            refreshCustomers();
+        } catch (Exception ex) {
+            showError(ex);
+        }
     }
 
     private void refreshCustomers() {
@@ -70,4 +122,3 @@ public class CustomerController {
         JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
     }
 }
-

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -32,15 +33,30 @@ public class ReceiptService {
         return receipt;
     }
 
-    public void print(Receipt receipt) {
+    public String print(Receipt receipt) {
         receipt.setPrinted(true);
         receiptRepository.update(receipt);
+        return writeEventFile("printed_tickets", receipt.getSaleId(), receipt.getTextBody());
     }
 
-    public void email(Receipt receipt, String email) {
+    public String email(Receipt receipt, String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email destinataire obligatoire");
+        }
         receipt.setEmailed(true);
-        receipt.setCustomerEmail(email);
+        receipt.setCustomerEmail(email.trim());
         receiptRepository.update(receipt);
+        StringBuilder mail = new StringBuilder();
+        mail.append("TO: ").append(email.trim()).append('\n');
+        mail.append("SUBJECT: Ticket LeadelMarche ").append(receipt.getSaleId()).append('\n');
+        mail.append('\n').append(receipt.getTextBody());
+        return writeEventFile("outbox_mails", receipt.getSaleId(), mail.toString());
+    }
+
+    public Receipt findBySaleId(String saleId) {
+        return receiptRepository.findBySaleId(saleId).orElseThrow(
+            () -> new IllegalStateException("Ticket introuvable pour la vente: " + saleId)
+        );
     }
 
     private String buildTextBody(Sale sale, List<SaleLine> lines, Customer customer, PromotionComputation promotions) {
@@ -80,5 +96,17 @@ public class ReceiptService {
             throw new IllegalStateException("Unable to write ticket file: " + ticketFile, ex);
         }
     }
-}
 
+    private String writeEventFile(String folder, String saleId, String content) {
+        String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        Path dir = textFileDatabase.getBasePath().resolve(folder);
+        Path eventFile = dir.resolve(saleId + "_" + stamp + ".txt");
+        try {
+            Files.createDirectories(dir);
+            Files.writeString(eventFile, content, StandardCharsets.UTF_8);
+            return eventFile.toString();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to write event file: " + eventFile, ex);
+        }
+    }
+}

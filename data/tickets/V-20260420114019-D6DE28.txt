@@ -1,0 +1,16 @@
+=== LEADELMARCHE ===
+Ticket: V-20260420114019-D6DE28
+Date: 2026-04-20 11:40:23
+Caissier: SELF-CHECKOUT
+Client: Client Anonyme
+--------------------------------------
+Pommes x3
+  PU HT: 2.90  TTC ligne: 6.2785
+--------------------------------------
+Sous-total HT: 8.70
+TVA: 0.4785
+Remise: 2.90
+TOTAL TTC: 3.3785
+Credite fidelite: 0.87
+Promotions: 30% sur le 2eme produit (cagnotte) (LOYALTY_POT), C bon les Pomme :) (IMMEDIATE_DISCOUNT)
+==============================

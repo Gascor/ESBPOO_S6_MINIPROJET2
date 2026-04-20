@@ -15,6 +15,7 @@ import com.leadelmarche.service.AbsenceService;
 import com.leadelmarche.service.CustomerService;
 import com.leadelmarche.service.FastCheckoutService;
 import com.leadelmarche.service.InventoryService;
+import com.leadelmarche.service.MailOutboxService;
 import com.leadelmarche.service.PromotionCatalogService;
 import com.leadelmarche.service.PromotionService;
 import com.leadelmarche.service.ReceiptService;
@@ -43,6 +44,7 @@ public class ApplicationContext {
     private final PromotionService promotionService;
     private final FastCheckoutService fastCheckoutService;
     private final ReceiptService receiptService;
+    private final MailOutboxService mailOutboxService;
     private final SalesService salesService;
     private final StatisticsService statisticsService;
     private final SeedDataService seedDataService;
@@ -75,6 +77,7 @@ public class ApplicationContext {
         this.promotionCatalogService = new PromotionCatalogService(promotionRuleRepository);
         this.promotionService = new PromotionService(promotionCatalogService);
         this.fastCheckoutService = new FastCheckoutService();
+        this.mailOutboxService = new MailOutboxService(database);
         this.receiptService = new ReceiptService(receiptRepository, database);
         this.salesService = new SalesService(
             saleRepository,
@@ -130,6 +133,10 @@ public class ApplicationContext {
 
     public StatisticsService statisticsService() {
         return statisticsService;
+    }
+
+    public MailOutboxService mailOutboxService() {
+        return mailOutboxService;
     }
 
     private void seedPromotions() {

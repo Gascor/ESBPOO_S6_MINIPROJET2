@@ -26,7 +26,7 @@ public class MainMenuController {
         );
         view.posButton().addActionListener(e -> openCheckoutModule());
         view.promotionButton().addActionListener(e -> new PromotionController(context.promotionCatalogService()).show());
-        view.statsButton().addActionListener(e -> new StatsController(context.statisticsService()).show());
+        view.statsButton().addActionListener(e -> new StatsController(context.statisticsService(), context.mailOutboxService()).show());
         view.exitButton().addActionListener(e -> System.exit(0));
     }
 

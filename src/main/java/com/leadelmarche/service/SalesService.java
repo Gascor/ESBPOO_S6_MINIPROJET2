@@ -224,6 +224,20 @@ public class SalesService {
         return receipt;
     }
 
+    public String printReceipt(String saleId) {
+        Receipt receipt = receiptService.findBySaleId(saleId);
+        return receiptService.print(receipt);
+    }
+
+    public String emailReceipt(String saleId, String email) {
+        Receipt receipt = receiptService.findBySaleId(saleId);
+        String recipient = email == null || email.isBlank() ? receipt.getCustomerEmail() : email.trim();
+        if (recipient == null || recipient.isBlank()) {
+            throw new IllegalArgumentException("Email destinataire obligatoire pour envoyer le ticket");
+        }
+        return receiptService.email(receipt, recipient);
+    }
+
     private Sale requireDraftSale(String saleId) {
         Sale sale = getSale(saleId);
         if (sale.getStatus() != SaleStatus.DRAFT) {

@@ -17,7 +17,10 @@ public class CustomerView extends JFrame {
     private final JTextField cardField = new JTextField();
     private final JTextField emailField = new JTextField();
     private final JTextField postalField = new JTextField();
+    private final JTextField editCustomerIdField = new JTextField();
     private final JButton addButton = new JButton("Ajouter Client");
+    private final JButton updateButton = new JButton("Mettre a jour Client");
+    private final JButton deactivateButton = new JButton("Desactiver Client");
     private final JTextField searchField = new JTextField();
     private final JButton searchButton = new JButton("Rechercher");
     private final JButton refreshButton = new JButton("Rafraichir");
@@ -40,7 +43,11 @@ public class CustomerView extends JFrame {
         form.add(emailField);
         form.add(new JLabel("Code postal"));
         form.add(postalField);
-        form.add(new JLabel(""));
+        form.add(new JLabel("ID client (Update/Delete)"));
+        form.add(editCustomerIdField);
+        form.add(updateButton);
+        form.add(deactivateButton);
+        form.add(new JLabel(" "));
         form.add(addButton);
 
         JPanel search = new JPanel(new GridLayout(1, 3, 6, 6));
@@ -68,7 +75,10 @@ public class CustomerView extends JFrame {
     public JTextField cardField() { return cardField; }
     public JTextField emailField() { return emailField; }
     public JTextField postalField() { return postalField; }
+    public JTextField editCustomerIdField() { return editCustomerIdField; }
     public JButton addButton() { return addButton; }
+    public JButton updateButton() { return updateButton; }
+    public JButton deactivateButton() { return deactivateButton; }
     public JTextField searchField() { return searchField; }
     public JButton searchButton() { return searchButton; }
     public JButton refreshButton() { return refreshButton; }

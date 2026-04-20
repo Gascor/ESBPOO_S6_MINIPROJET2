@@ -23,7 +23,10 @@ public class StaffView extends JFrame {
     private final JTextField supervisorField = new JTextField();
     private final JComboBox<ContractType> contractTypeCombo = new JComboBox<>(ContractType.values());
     private final JTextField contractHoursField = new JTextField("35");
+    private final JTextField editEmployeeIdField = new JTextField();
     private final JButton addButton = new JButton("Ajouter Employe");
+    private final JButton updateButton = new JButton("Mettre a jour Employe");
+    private final JButton deactivateButton = new JButton("Desactiver Employe");
 
     private final JTextField searchField = new JTextField();
     private final JButton searchButton = new JButton("Rechercher");
@@ -68,7 +71,11 @@ public class StaffView extends JFrame {
         form.add(contractTypeCombo);
         form.add(new JLabel("Heures contrat / semaine"));
         form.add(contractHoursField);
-        form.add(new JLabel(""));
+        form.add(new JLabel("ID employe (Update/Delete)"));
+        form.add(editEmployeeIdField);
+        form.add(updateButton);
+        form.add(deactivateButton);
+        form.add(new JLabel(" "));
         form.add(addButton);
 
         JPanel search = new JPanel(new GridLayout(1, 3, 6, 6));
@@ -138,7 +145,10 @@ public class StaffView extends JFrame {
     public JTextField supervisorField() { return supervisorField; }
     public JComboBox<ContractType> contractTypeCombo() { return contractTypeCombo; }
     public JTextField contractHoursField() { return contractHoursField; }
+    public JTextField editEmployeeIdField() { return editEmployeeIdField; }
     public JButton addButton() { return addButton; }
+    public JButton updateButton() { return updateButton; }
+    public JButton deactivateButton() { return deactivateButton; }
     public JTextField searchField() { return searchField; }
     public JButton searchButton() { return searchButton; }
     public JButton refreshButton() { return refreshButton; }

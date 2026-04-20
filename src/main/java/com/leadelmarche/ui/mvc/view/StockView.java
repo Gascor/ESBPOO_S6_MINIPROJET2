@@ -21,13 +21,19 @@ public class StockView extends JFrame {
     private final JTextField priceField = new JTextField("0.00");
     private final JTextField vatField = new JTextField("20");
     private final JTextField initStockField = new JTextField("0");
+    private final JTextField editProductIdField = new JTextField();
     private final JCheckBox weightedBox = new JCheckBox("Produit pese");
     private final JCheckBox pieceNoBarcodeBox = new JCheckBox("Piece sans code-barres");
     private final JButton addProductButton = new JButton("Ajouter Produit");
+    private final JButton updateProductButton = new JButton("Mettre a jour Produit");
+    private final JButton deactivateProductButton = new JButton("Desactiver Produit");
 
     private final JTextField restockProductIdField = new JTextField();
+    private final JTextField restockStoreIdField = new JTextField("STORE-001");
     private final JTextField restockQtyField = new JTextField("1");
     private final JButton restockButton = new JButton("Recharger Stock");
+    private final JTextField interStoreProductIdField = new JTextField();
+    private final JButton interStoreButton = new JButton("Consulter stock inter-succursales");
 
     private final JTextField searchField = new JTextField();
     private final JButton searchButton = new JButton("Rechercher");
@@ -55,18 +61,31 @@ public class StockView extends JFrame {
         addForm.add(vatField);
         addForm.add(new JLabel("Stock initial"));
         addForm.add(initStockField);
+        addForm.add(new JLabel("ID produit (Update/Delete)"));
+        addForm.add(editProductIdField);
         addForm.add(weightedBox);
         addForm.add(pieceNoBarcodeBox);
+        addForm.add(updateProductButton);
+        addForm.add(deactivateProductButton);
         addForm.add(new JLabel(""));
         addForm.add(addProductButton);
 
         JPanel restockForm = new JPanel(new GridLayout(0, 2, 6, 6));
         restockForm.add(new JLabel("Product ID"));
         restockForm.add(restockProductIdField);
+        restockForm.add(new JLabel("Store ID"));
+        restockForm.add(restockStoreIdField);
         restockForm.add(new JLabel("Quantite"));
         restockForm.add(restockQtyField);
         restockForm.add(new JLabel(""));
         restockForm.add(restockButton);
+
+        JPanel interStoreForm = new JPanel(new GridLayout(0, 2, 6, 6));
+        interStoreForm.setBorder(BorderFactory.createTitledBorder("Stock inter-succursales"));
+        interStoreForm.add(new JLabel("Product ID"));
+        interStoreForm.add(interStoreProductIdField);
+        interStoreForm.add(new JLabel(""));
+        interStoreForm.add(interStoreButton);
 
         JPanel searchPanel = new JPanel(new GridLayout(1, 3, 6, 6));
         searchPanel.add(searchField);
@@ -76,7 +95,10 @@ public class StockView extends JFrame {
         JPanel top = new JPanel(new BorderLayout());
         top.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         top.add(addForm, BorderLayout.NORTH);
-        top.add(restockForm, BorderLayout.CENTER);
+        JPanel center = new JPanel(new GridLayout(2, 1, 6, 6));
+        center.add(restockForm);
+        center.add(interStoreForm);
+        top.add(center, BorderLayout.CENTER);
         top.add(searchPanel, BorderLayout.SOUTH);
 
         outputArea.setEditable(false);
@@ -97,12 +119,18 @@ public class StockView extends JFrame {
     public JTextField priceField() { return priceField; }
     public JTextField vatField() { return vatField; }
     public JTextField initStockField() { return initStockField; }
+    public JTextField editProductIdField() { return editProductIdField; }
     public JCheckBox weightedBox() { return weightedBox; }
     public JCheckBox pieceNoBarcodeBox() { return pieceNoBarcodeBox; }
     public JButton addProductButton() { return addProductButton; }
+    public JButton updateProductButton() { return updateProductButton; }
+    public JButton deactivateProductButton() { return deactivateProductButton; }
     public JTextField restockProductIdField() { return restockProductIdField; }
+    public JTextField restockStoreIdField() { return restockStoreIdField; }
     public JTextField restockQtyField() { return restockQtyField; }
     public JButton restockButton() { return restockButton; }
+    public JTextField interStoreProductIdField() { return interStoreProductIdField; }
+    public JButton interStoreButton() { return interStoreButton; }
     public JTextField searchField() { return searchField; }
     public JButton searchButton() { return searchButton; }
     public JButton refreshButton() { return refreshButton; }

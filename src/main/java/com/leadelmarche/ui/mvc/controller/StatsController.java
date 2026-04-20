@@ -1,5 +1,6 @@
 package com.leadelmarche.ui.mvc.controller;
 
+import com.leadelmarche.service.MailOutboxService;
 import com.leadelmarche.service.StatisticsService;
 import com.leadelmarche.ui.mvc.view.StatsView;
 import java.math.BigDecimal;
@@ -11,10 +12,13 @@ import javax.swing.JOptionPane;
 
 public class StatsController {
     private final StatisticsService statisticsService;
+    private final MailOutboxService mailOutboxService;
     private final StatsView view;
+    private String lastReportText = "";
 
-    public StatsController(StatisticsService statisticsService) {
+    public StatsController(StatisticsService statisticsService, MailOutboxService mailOutboxService) {
         this.statisticsService = statisticsService;
+        this.mailOutboxService = mailOutboxService;
         this.view = new StatsView();
         bindActions();
         refreshStatisticList(null);
@@ -32,6 +36,7 @@ public class StatsController {
             e -> view.setComparisonFieldsEnabled(view.compareCheckBox().isSelected())
         );
         view.addCustomStatButton().addActionListener(e -> addCustomStatistic());
+        view.emailReportButton().addActionListener(e -> emailCurrentReport());
         view.addAbsenceButton().addActionListener(e -> registerAbsence());
     }
 
@@ -69,7 +74,8 @@ public class StatsController {
             String displayMode = view.displayModeCombo().getSelectedItem().toString();
             if (!view.compareCheckBox().isSelected()) {
                 BigDecimal value = statisticsService.compute(selected.getId(), startA, endA);
-                view.outputArea().setText(renderSingle(selected, startA, endA, value, displayMode));
+                lastReportText = renderSingle(selected, startA, endA, value, displayMode);
+                view.outputArea().setText(lastReportText);
                 return;
             }
             LocalDate startB = parseDate(view.compareStartField().getText(), "Debut periode B");
@@ -81,7 +87,8 @@ public class StatsController {
                 startB,
                 endB
             );
-            view.outputArea().setText(renderComparison(result, startA, endA, startB, endB, displayMode));
+            lastReportText = renderComparison(result, startA, endA, startB, endB, displayMode);
+            view.outputArea().setText(lastReportText);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
@@ -94,6 +101,28 @@ public class StatsController {
             StatisticsService.StatisticOption created = statisticsService.registerProductSalesStatistic(name, productToken);
             refreshStatisticList(created.getId());
             view.outputArea().append("\nNouvelle statistique ajoutee: " + created.getLabel() + '\n');
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void emailCurrentReport() {
+        try {
+            if (view.outputArea().getText() == null || view.outputArea().getText().isBlank()) {
+                computeStatistic();
+            }
+            String to = view.reportEmailField().getText().trim();
+            if (to.isBlank()) {
+                throw new IllegalArgumentException("Email destinataire obligatoire");
+            }
+            StatisticsService.StatisticOption selected =
+                (StatisticsService.StatisticOption) view.statisticCombo().getSelectedItem();
+            String title = selected == null
+                ? "Statistiques LeadelMarche"
+                : "Statistique LeadelMarche - " + selected.getLabel();
+            String report = view.outputArea().getText().isBlank() ? lastReportText : view.outputArea().getText();
+            String path = mailOutboxService.sendMail(to, title, report);
+            JOptionPane.showMessageDialog(view, "Statistique envoyee (outbox): " + path, "Email", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }

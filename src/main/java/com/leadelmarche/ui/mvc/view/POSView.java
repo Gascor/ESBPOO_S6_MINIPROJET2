@@ -28,8 +28,13 @@ public class POSView extends JFrame {
     private final JButton addWeightedButton = new JButton("Ajouter produit pese");
 
     private final JComboBox<String> paymentModeCombo = new JComboBox<>(new String[]{"CASH", "CARD", "MOBILE", "VOUCHER"});
+    private final JButton calculatorButton = new JButton("Calculatrice");
     private final JButton changePaymentButton = new JButton("Changer paiement");
     private final JButton finalizeButton = new JButton("Finaliser vente");
+    private final JLabel ticketLabel = new JLabel("Ticket: -");
+    private final JTextField ticketEmailField = new JTextField();
+    private final JButton printTicketButton = new JButton("Imprimer ticket");
+    private final JButton emailTicketButton = new JButton("Envoyer ticket par mail");
 
     private final JTextArea cartArea = new JTextArea();
 
@@ -65,16 +70,29 @@ public class POSView extends JFrame {
         linePanel.add(new JLabel(""));
         linePanel.add(addWeightedButton);
 
-        JPanel paymentPanel = new JPanel(new GridLayout(1, 3, 6, 6));
+        JPanel paymentPanel = new JPanel(new GridLayout(1, 4, 6, 6));
         paymentPanel.add(paymentModeCombo);
+        paymentPanel.add(calculatorButton);
         paymentPanel.add(changePaymentButton);
         paymentPanel.add(finalizeButton);
+
+        JPanel ticketPanel = new JPanel(new GridLayout(0, 2, 6, 6));
+        ticketPanel.setBorder(BorderFactory.createTitledBorder("Ticket client"));
+        ticketPanel.add(new JLabel("Dernier ticket"));
+        ticketPanel.add(ticketLabel);
+        ticketPanel.add(new JLabel("Email ticket"));
+        ticketPanel.add(ticketEmailField);
+        ticketPanel.add(printTicketButton);
+        ticketPanel.add(emailTicketButton);
 
         JPanel north = new JPanel(new BorderLayout());
         north.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         north.add(startPanel, BorderLayout.NORTH);
         north.add(linePanel, BorderLayout.CENTER);
-        north.add(paymentPanel, BorderLayout.SOUTH);
+        JPanel actions = new JPanel(new GridLayout(2, 1, 6, 6));
+        actions.add(paymentPanel);
+        actions.add(ticketPanel);
+        north.add(actions, BorderLayout.SOUTH);
 
         cartArea.setEditable(false);
 
@@ -98,8 +116,13 @@ public class POSView extends JFrame {
     public JTextField weightField() { return weightField; }
     public JButton addWeightedButton() { return addWeightedButton; }
     public JComboBox<String> paymentModeCombo() { return paymentModeCombo; }
+    public JButton calculatorButton() { return calculatorButton; }
     public JButton changePaymentButton() { return changePaymentButton; }
     public JButton finalizeButton() { return finalizeButton; }
+    public JLabel ticketLabel() { return ticketLabel; }
+    public JTextField ticketEmailField() { return ticketEmailField; }
+    public JButton printTicketButton() { return printTicketButton; }
+    public JButton emailTicketButton() { return emailTicketButton; }
     public JTextArea cartArea() { return cartArea; }
 
     public void setBadgePrefill(String badge, boolean editable) {

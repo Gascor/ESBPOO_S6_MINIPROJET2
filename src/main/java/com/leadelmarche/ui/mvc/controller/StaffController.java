@@ -33,6 +33,8 @@ public class StaffController {
 
     private void bindActions() {
         view.addButton().addActionListener(e -> addEmployee());
+        view.updateButton().addActionListener(e -> updateEmployee());
+        view.deactivateButton().addActionListener(e -> deactivateEmployee());
         view.searchButton().addActionListener(e -> searchEmployees());
         view.refreshButton().addActionListener(e -> refreshEmployees());
         view.addAbsenceButton().addActionListener(e -> addAbsence());
@@ -68,6 +70,55 @@ public class StaffController {
 
     private void refreshEmployees() {
         render(staffService.listEmployees(true));
+    }
+
+    private void updateEmployee() {
+        try {
+            String employeeId = view.editEmployeeIdField().getText().trim();
+            if (employeeId.isBlank()) {
+                throw new IllegalArgumentException("ID employe obligatoire pour la mise a jour");
+            }
+            Employee employee = staffService.findById(employeeId).orElseThrow(
+                () -> new IllegalStateException("Employe introuvable: " + employeeId)
+            );
+            if (!view.badgeField().getText().trim().isBlank()) {
+                employee.setBadgeNumber(view.badgeField().getText().trim());
+            }
+            if (!view.firstNameField().getText().trim().isBlank()) {
+                employee.setFirstName(view.firstNameField().getText().trim());
+            }
+            if (!view.lastNameField().getText().trim().isBlank()) {
+                employee.setLastName(view.lastNameField().getText().trim());
+            }
+            if (!view.roleField().getText().trim().isBlank()) {
+                employee.setRole(view.roleField().getText().trim());
+            }
+            if (!view.supervisorField().getText().trim().isBlank()) {
+                employee.setSupervisorBadge(view.supervisorField().getText().trim());
+            }
+            ContractType selectedContract = view.contractTypeCombo().getItemAt(view.contractTypeCombo().getSelectedIndex());
+            employee.setContractType(selectedContract);
+            if (!view.contractHoursField().getText().trim().isBlank()) {
+                employee.setContractWeeklyHours(parseInt(view.contractHoursField().getText().trim(), employee.getContractWeeklyHours()));
+            }
+            staffService.updateEmployee(employee);
+            refreshEmployees();
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void deactivateEmployee() {
+        try {
+            String employeeId = view.editEmployeeIdField().getText().trim();
+            if (employeeId.isBlank()) {
+                throw new IllegalArgumentException("ID employe obligatoire pour la desactivation");
+            }
+            staffService.deactivateEmployee(employeeId);
+            refreshEmployees();
+        } catch (Exception ex) {
+            showError(ex);
+        }
     }
 
     private void render(List<Employee> employees) {

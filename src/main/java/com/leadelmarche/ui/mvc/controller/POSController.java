@@ -6,6 +6,7 @@ import com.leadelmarche.domain.sales.Receipt;
 import com.leadelmarche.domain.sales.Sale;
 import com.leadelmarche.domain.sales.SaleLine;
 import com.leadelmarche.service.SalesService;
+import com.leadelmarche.ui.mvc.view.MiniCalculatorDialog;
 import com.leadelmarche.ui.mvc.view.POSView;
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,6 +16,8 @@ public class POSController {
     private final SalesService salesService;
     private final POSView view;
     private String currentSaleId;
+    private String lastFinalizedSaleId;
+    private String lastFinalizedSaleNumber;
 
     public POSController(SalesService salesService) {
         this(salesService, null);
@@ -37,8 +40,11 @@ public class POSController {
         view.startSaleButton().addActionListener(e -> startSale());
         view.addBarcodeButton().addActionListener(e -> addByBarcode());
         view.addWeightedButton().addActionListener(e -> addWeighted());
+        view.calculatorButton().addActionListener(e -> MiniCalculatorDialog.open(view));
         view.changePaymentButton().addActionListener(e -> changePaymentMode());
         view.finalizeButton().addActionListener(e -> finalizeSale());
+        view.printTicketButton().addActionListener(e -> printLastTicket());
+        view.emailTicketButton().addActionListener(e -> emailLastTicket());
     }
 
     private void startSale() {
@@ -99,11 +105,39 @@ public class POSController {
     private void finalizeSale() {
         try {
             ensureSaleStarted();
+            Sale draftSale = salesService.getSale(currentSaleId);
             Receipt receipt = salesService.finalizeSale(currentSaleId);
             view.cartArea().setText(receipt.getTextBody());
+            lastFinalizedSaleId = receipt.getSaleId();
+            lastFinalizedSaleNumber = draftSale.getSaleNumber();
+            view.ticketLabel().setText("Ticket: " + lastFinalizedSaleNumber);
+            if (receipt.getCustomerEmail() != null && !receipt.getCustomerEmail().isBlank()) {
+                view.ticketEmailField().setText(receipt.getCustomerEmail());
+            }
             currentSaleId = null;
             view.saleIdLabel().setText("Sale ID: -");
             JOptionPane.showMessageDialog(view, "Vente finalisee. Ticket cree.", "OK", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void printLastTicket() {
+        try {
+            ensureTicketAvailable();
+            String path = salesService.printReceipt(lastFinalizedSaleId);
+            JOptionPane.showMessageDialog(view, "Ticket imprime (fichier): " + path, "Ticket", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void emailLastTicket() {
+        try {
+            ensureTicketAvailable();
+            String email = view.ticketEmailField().getText().trim();
+            String path = salesService.emailReceipt(lastFinalizedSaleId, email);
+            JOptionPane.showMessageDialog(view, "Ticket envoye (outbox): " + path, "Ticket", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             showError(ex);
         }
@@ -133,6 +167,12 @@ public class POSController {
     private void ensureSaleStarted() {
         if (currentSaleId == null || currentSaleId.isBlank()) {
             throw new IllegalStateException("Demarrer une vente avant d'ajouter des lignes.");
+        }
+    }
+
+    private void ensureTicketAvailable() {
+        if (lastFinalizedSaleId == null || lastFinalizedSaleId.isBlank()) {
+            throw new IllegalStateException("Finaliser une vente avant impression/envoi ticket.");
         }
     }
 

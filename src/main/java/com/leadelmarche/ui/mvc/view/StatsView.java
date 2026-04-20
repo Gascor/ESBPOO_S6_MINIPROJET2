@@ -27,6 +27,8 @@ public class StatsView extends JFrame {
     private final JTextField customStatNameField = new JTextField();
     private final JTextField customProductFilterField = new JTextField();
     private final JButton addCustomStatButton = new JButton("Ajouter statistique produit");
+    private final JTextField reportEmailField = new JTextField();
+    private final JButton emailReportButton = new JButton("Envoyer statistique par mail");
     private final JTextField absenceBadgeField = new JTextField();
     private final JTextField absenceDateField = new JTextField(LocalDate.now().toString());
     private final JComboBox<String> absenceTypeCombo = new JComboBox<>(new String[]{"CONGE", "RTT", "MALADIE", "AUTRE"});
@@ -71,6 +73,12 @@ public class StatsView extends JFrame {
         customStatPanel.add(customProductFilterField);
         customStatPanel.add(addCustomStatButton);
 
+        JPanel emailPanel = new JPanel(new GridLayout(1, 3, 8, 8));
+        emailPanel.setBorder(BorderFactory.createTitledBorder("Partage manager"));
+        emailPanel.add(new JLabel("Email destinataire"));
+        emailPanel.add(reportEmailField);
+        emailPanel.add(emailReportButton);
+
         JPanel absencePanel = new JPanel(new GridLayout(2, 5, 8, 8));
         absencePanel.setBorder(BorderFactory.createTitledBorder("Saisie absences personnel"));
         absencePanel.add(new JLabel("Badge"));
@@ -84,11 +92,12 @@ public class StatsView extends JFrame {
         absencePanel.add(absenceNoteField);
         absencePanel.add(addAbsenceButton);
 
-        JPanel topPanel = new JPanel(new GridLayout(4, 1, 8, 8));
+        JPanel topPanel = new JPanel(new GridLayout(5, 1, 8, 8));
         topPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         topPanel.add(analysisPanel);
         topPanel.add(comparePanel);
         topPanel.add(customStatPanel);
+        topPanel.add(emailPanel);
         topPanel.add(absencePanel);
 
         periodStartField.setToolTipText("Format attendu: YYYY-MM-DD");
@@ -150,6 +159,14 @@ public class StatsView extends JFrame {
 
     public JButton addCustomStatButton() {
         return addCustomStatButton;
+    }
+
+    public JTextField reportEmailField() {
+        return reportEmailField;
+    }
+
+    public JButton emailReportButton() {
+        return emailReportButton;
     }
 
     public JTextField absenceBadgeField() {

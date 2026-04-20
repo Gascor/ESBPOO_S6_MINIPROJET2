@@ -1,0 +1,14 @@
+=== LEADELMARCHE ===
+Ticket: V-20260420101412-F4900C
+Date: 2026-04-20 10:18:38
+Caissier: 0166394
+Client: Client Anonyme
+--------------------------------------
+Test1 x1
+  PU HT: 10.00  TTC ligne: 12.00
+--------------------------------------
+Sous-total HT: 10.00
+TVA: 2.00
+Remise: 0.00
+TOTAL TTC: 12.00
+==============================

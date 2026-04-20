@@ -7,6 +7,7 @@ import com.leadelmarche.domain.sales.Sale;
 import com.leadelmarche.domain.sales.SaleLine;
 import com.leadelmarche.service.InventoryService;
 import com.leadelmarche.service.SalesService;
+import com.leadelmarche.ui.mvc.view.MiniCalculatorDialog;
 import com.leadelmarche.ui.mvc.view.SelfCheckoutView;
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,6 +18,8 @@ public class SelfCheckoutController {
     private final InventoryService inventoryService;
     private final SelfCheckoutView view;
     private String currentSaleId;
+    private String lastFinalizedSaleId;
+    private String lastFinalizedSaleNumber;
 
     private record ProductChoice(String id, String label) {
         @Override
@@ -42,8 +45,11 @@ public class SelfCheckoutController {
         view.addScanButton().addActionListener(e -> addByScan());
         view.addPieceButton().addActionListener(e -> addPieceProduct());
         view.addWeightedButton().addActionListener(e -> addWeightedProduct());
+        view.calculatorButton().addActionListener(e -> MiniCalculatorDialog.open(view));
         view.helpButton().addActionListener(e -> callCashier());
         view.finalizeButton().addActionListener(e -> finalizeSale());
+        view.printTicketButton().addActionListener(e -> printLastTicket());
+        view.emailTicketButton().addActionListener(e -> emailLastTicket());
     }
 
     private void loadProductChoices() {
@@ -139,11 +145,39 @@ public class SelfCheckoutController {
             ensureSaleStarted();
             PaymentMode mode = PaymentMode.valueOf(view.paymentModeCombo().getSelectedItem().toString());
             salesService.changePaymentMode(currentSaleId, mode);
+            Sale draftSale = salesService.getSale(currentSaleId);
             Receipt receipt = salesService.finalizeSale(currentSaleId);
             view.cartArea().setText(receipt.getTextBody());
+            lastFinalizedSaleId = receipt.getSaleId();
+            lastFinalizedSaleNumber = draftSale.getSaleNumber();
+            view.ticketLabel().setText("Ticket: " + lastFinalizedSaleNumber);
+            if (receipt.getCustomerEmail() != null && !receipt.getCustomerEmail().isBlank()) {
+                view.ticketEmailField().setText(receipt.getCustomerEmail());
+            }
             currentSaleId = null;
             view.saleIdLabel().setText("Sale ID: -");
             JOptionPane.showMessageDialog(view, "Paiement finalise. Ticket cree.", "OK", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void printLastTicket() {
+        try {
+            ensureTicketAvailable();
+            String path = salesService.printReceipt(lastFinalizedSaleId);
+            JOptionPane.showMessageDialog(view, "Ticket imprime (fichier): " + path, "Ticket", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private void emailLastTicket() {
+        try {
+            ensureTicketAvailable();
+            String email = view.ticketEmailField().getText().trim();
+            String path = salesService.emailReceipt(lastFinalizedSaleId, email);
+            JOptionPane.showMessageDialog(view, "Ticket envoye (outbox): " + path, "Ticket", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             showError(ex);
         }
@@ -170,6 +204,12 @@ public class SelfCheckoutController {
     private void ensureSaleStarted() {
         if (currentSaleId == null || currentSaleId.isBlank()) {
             throw new IllegalStateException("Demarrer une vente avant toute action.");
+        }
+    }
+
+    private void ensureTicketAvailable() {
+        if (lastFinalizedSaleId == null || lastFinalizedSaleId.isBlank()) {
+            throw new IllegalStateException("Finaliser une vente avant impression/envoi ticket.");
         }
     }
 

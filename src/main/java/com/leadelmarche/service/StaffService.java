@@ -38,5 +38,8 @@ public class StaffService {
     public Optional<Employee> findByBadge(String badgeNumber) {
         return employeeRepository.findByBadge(badgeNumber);
     }
-}
 
+    public Optional<Employee> findById(String employeeId) {
+        return employeeRepository.findById(employeeId);
+    }
+}
