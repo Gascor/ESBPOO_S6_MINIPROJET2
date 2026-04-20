@@ -14,6 +14,7 @@ public class StatsController {
     private final StatisticsService statisticsService;
     private final MailOutboxService mailOutboxService;
     private final StatsView view;
+    // Garde la derniere version calculée pour l'envoyer telle quelle par mail.
     private String lastReportText = "";
 
     public StatsController(StatisticsService statisticsService, MailOutboxService mailOutboxService) {
@@ -120,6 +121,7 @@ public class StatsController {
             String title = selected == null
                 ? "Statistiques LeadelMarche"
                 : "Statistique LeadelMarche - " + selected.getLabel();
+            // Si l'utilisateur a retouché la zone resultat, on envoie exactement ce qu'il voit a l'ecran.
             String report = view.outputArea().getText().isBlank() ? lastReportText : view.outputArea().getText();
             String path = mailOutboxService.sendMail(to, title, report);
             JOptionPane.showMessageDialog(view, "Statistique envoyee (outbox): " + path, "Email", JOptionPane.INFORMATION_MESSAGE);

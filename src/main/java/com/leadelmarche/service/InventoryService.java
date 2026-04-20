@@ -31,6 +31,7 @@ public class InventoryService {
 
     public void deactivateProduct(String productId) {
         productRepository.findById(productId).ifPresent(p -> {
+            // Soft delete: on masque la fiche au lieu de supprimer l'historique.
             p.setActive(false);
             productRepository.update(p);
         });
@@ -53,6 +54,7 @@ public class InventoryService {
     }
 
     public Optional<Product> findWeightedProductByType(ProductType type) {
+        // Retourne le premier produit actif vendable au poids pour ce type.
         return productRepository.findAll(true).stream()
             .filter(p -> p.isWeighted() && p.getType() == type)
             .findFirst();
@@ -74,6 +76,7 @@ public class InventoryService {
         if (quantity.signum() < 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
+        // Crée une ligne d'inventaire si ce couple (produit, magasin) n'existe pas encore.
         InventoryItem item = inventoryRepository.findByProductAndStore(productId, storeId).orElseGet(() -> {
             InventoryItem created = new InventoryItem();
             created.setProductId(productId);
@@ -83,6 +86,7 @@ public class InventoryService {
             return created;
         });
         item.setQuantity(item.getQuantity().add(quantity));
+        // Premier passage = create, sinon update.
         if (item.getId() == null || item.getId().isBlank()) {
             inventoryRepository.create(item);
         } else {
@@ -94,6 +98,7 @@ public class InventoryService {
         if (quantity.signum() < 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
+        // Refuse toute sortie de stock qui passerait sous zero.
         InventoryItem item = inventoryRepository.findByProductAndStore(productId, storeId).orElseThrow(
             () -> new IllegalStateException("No inventory record for product " + productId + " in store " + storeId)
         );
@@ -106,12 +111,14 @@ public class InventoryService {
     }
 
     public BigDecimal getAvailableStock(String productId, String storeId) {
+        // Quantité disponible = quantité totale - quantité réservée.
         return inventoryRepository.findByProductAndStore(productId, storeId)
             .map(InventoryItem::availableQuantity)
             .orElse(BigDecimal.ZERO);
     }
 
     public List<InventoryItem> getStockAcrossStores(String productId) {
+        // Base pour la vue de consultation inter-succursales.
         return inventoryRepository.findAll(true).stream()
             .filter(item -> productId.equals(item.getProductId()))
             .toList();
@@ -122,7 +129,7 @@ public class InventoryService {
         List<Product> products = productRepository.findAll(true);
         for (Product p : products) {
             BigDecimal stock = getAvailableStock(p.getId(), DEFAULT_STORE_ID);
-            // simple threshold on absolute units by using percent as pseudo unit floor
+            // MVP: ce "percent" est utilisé comme seuil mini en unités dans la succursale par défaut.
             BigDecimal thresholdUnits = p.getLowStockThresholdPercent().max(BigDecimal.ONE);
             if (stock.compareTo(thresholdUnits) <= 0) {
                 alerts.add("LOW STOCK: " + p.getName() + " (" + stock + ")");

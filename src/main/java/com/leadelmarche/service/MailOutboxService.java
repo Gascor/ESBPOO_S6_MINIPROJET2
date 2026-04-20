@@ -19,10 +19,12 @@ public class MailOutboxService {
         if (to == null || to.isBlank()) {
             throw new IllegalArgumentException("Destinataire email obligatoire");
         }
+        // Service "outbox": on simule l'envoi en ecrivant un fichier partageable.
         String safeSubject = (subject == null || subject.isBlank()) ? "LeadelMarche" : subject.trim();
         String safeBody = body == null ? "" : body;
         String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         Path outboxDir = textFileDatabase.getBasePath().resolve("outbox_mails");
+        // Nettoyage du destinataire pour produire un nom de fichier valide.
         String safeTo = to.trim().replaceAll("[^a-zA-Z0-9@._-]", "_");
         Path mailFile = outboxDir.resolve("mail_" + safeTo + "_" + stamp + ".txt");
         StringBuilder content = new StringBuilder();
@@ -32,6 +34,7 @@ public class MailOutboxService {
         content.append(safeBody);
         try {
             Files.createDirectories(outboxDir);
+            // UTF-8 pour garder accents et symboles dans les rapports envoyes.
             Files.writeString(mailFile, content.toString(), StandardCharsets.UTF_8);
             return mailFile.toString();
         } catch (IOException ex) {

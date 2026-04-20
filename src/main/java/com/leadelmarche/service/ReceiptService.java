@@ -36,6 +36,7 @@ public class ReceiptService {
     public String print(Receipt receipt) {
         receipt.setPrinted(true);
         receiptRepository.update(receipt);
+        // Simulation impression: trace un fichier "printed_tickets" pour audit demo.
         return writeEventFile("printed_tickets", receipt.getSaleId(), receipt.getTextBody());
     }
 
@@ -103,6 +104,7 @@ public class ReceiptService {
         Path eventFile = dir.resolve(saleId + "_" + stamp + ".txt");
         try {
             Files.createDirectories(dir);
+            // Meme approche que les tickets: sortie texte simple pour rester cohérent avec la "BD fichiers".
             Files.writeString(eventFile, content, StandardCharsets.UTF_8);
             return eventFile.toString();
         } catch (IOException ex) {

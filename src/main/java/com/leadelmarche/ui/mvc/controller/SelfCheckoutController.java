@@ -18,6 +18,7 @@ public class SelfCheckoutController {
     private final InventoryService inventoryService;
     private final SelfCheckoutView view;
     private String currentSaleId;
+    // Meme logique que la caisse classique: actions ticket disponibles juste apres finalisation.
     private String lastFinalizedSaleId;
     private String lastFinalizedSaleNumber;
 

@@ -85,6 +85,7 @@ public final class MiniCalculatorDialog extends JDialog {
     }
 
     private BigDecimal evaluate(String expression) {
+        // Petit parser "maison": 2 piles (valeurs + operateurs) pour gerer priorites et parentheses.
         List<BigDecimal> values = new ArrayList<>();
         List<Character> operators = new ArrayList<>();
         String expr = expression.replace(" ", "");
@@ -108,6 +109,7 @@ public final class MiniCalculatorDialog extends JDialog {
                 continue;
             }
             if (isOperator(c)) {
+                // Gere le cas "-12" ou "(-3.5)" comme un nombre negatif et non une soustraction binaire.
                 if (c == '-' && isUnaryMinus(expr, i)) {
                     int next = i + 1;
                     while (next < expr.length() && (Character.isDigit(expr.charAt(next)) || expr.charAt(next) == '.')) {
@@ -173,6 +175,7 @@ public final class MiniCalculatorDialog extends JDialog {
         if (operators.isEmpty() || values.size() < 2) {
             throw new IllegalArgumentException("Expression invalide");
         }
+        // Applique toujours le dernier operateur pour respecter l'ordre de calcul construit plus haut.
         char op = operators.remove(operators.size() - 1);
         BigDecimal right = values.remove(values.size() - 1);
         BigDecimal left = values.remove(values.size() - 1);

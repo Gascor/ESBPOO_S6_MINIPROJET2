@@ -23,6 +23,7 @@ public class CustomerService {
 
     public void deactivateCustomer(String customerId) {
         customerRepository.findById(customerId).ifPresent(c -> {
+            // DELETE logique: permet de conserver l'historique des ventes liées au client.
             c.setActive(false);
             customerRepository.update(c);
         });
@@ -45,6 +46,7 @@ public class CustomerService {
     }
 
     public void ensureAnonymousCustomerExists() {
+        // Le client "Anonyme" est requis pour les ventes sans carte fidelite.
         if (customerRepository.findByCardNumber(Customer.ANONYMOUS_CARD).isPresent()) {
             return;
         }
@@ -61,6 +63,7 @@ public class CustomerService {
     public Customer findOrAnonymous(String cardNumber) {
         ensureAnonymousCustomerExists();
         if (cardNumber != null && !cardNumber.isBlank()) {
+            // Si la carte existe, on utilise le vrai client; sinon fallback anonyme.
             Optional<Customer> customer = customerRepository.findByCardNumber(cardNumber);
             if (customer.isPresent()) {
                 return customer.get();
@@ -72,7 +75,7 @@ public class CustomerService {
     }
 
     public void creditLoyalty(String cardNumber, BigDecimal amount) {
-        // MVP: loyalty amount is tracked in sale history and receipt details.
-        // A dedicated LoyaltyAccount repository can be added without changing service API.
+        // MVP: la cagnotte est tracée dans les ventes/tickets.
+        // Extension prévue: brancher un vrai repository LoyaltyAccount sans casser l'API service.
     }
 }

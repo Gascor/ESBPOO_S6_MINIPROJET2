@@ -129,6 +129,7 @@ public class StockController {
         try {
             String productId = view.interStoreProductIdField().getText().trim();
             if (productId.isBlank()) {
+                // Petit confort: reutilise l'ID de la zone CRUD si l'utilisateur ne remplit pas ce champ.
                 productId = view.editProductIdField().getText().trim();
             }
             if (productId.isBlank()) {
@@ -144,6 +145,7 @@ public class StockController {
             if (items.isEmpty()) {
                 sb.append("Aucune donnee inter-succursales pour ce produit.\n");
             } else {
+                // Vue consolidée multi magasins pour aider l'orientation client vers le point de vente dispo.
                 for (InventoryItem item : items) {
                     sb.append(item.getStoreId()).append(" | ")
                         .append(item.getQuantity()).append(" | ")

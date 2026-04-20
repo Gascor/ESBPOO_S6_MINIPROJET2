@@ -16,6 +16,7 @@ public class POSController {
     private final SalesService salesService;
     private final POSView view;
     private String currentSaleId;
+    // Memorise la derniere vente finalisée pour declencher impression/mail apres encaissement.
     private String lastFinalizedSaleId;
     private String lastFinalizedSaleNumber;
 
