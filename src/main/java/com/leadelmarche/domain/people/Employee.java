@@ -12,17 +12,23 @@ public class Employee extends BaseEntity {
     private Address workAddress;
     private String role;
     private String supervisorBadge;
+    private ContractType contractType;
+    private int contractWeeklyHours;
 
     public Employee() {
         super();
         this.homeAddress = new Address();
         this.workAddress = new Address();
+        this.contractType = ContractType.CDI_35H;
+        this.contractWeeklyHours = 35;
     }
 
     public Employee(String id, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) {
         super(id, active, createdAt, updatedAt);
         this.homeAddress = new Address();
         this.workAddress = new Address();
+        this.contractType = ContractType.CDI_35H;
+        this.contractWeeklyHours = 35;
     }
 
     public String getBadgeNumber() {
@@ -88,8 +94,25 @@ public class Employee extends BaseEntity {
         touch();
     }
 
+    public ContractType getContractType() {
+        return contractType;
+    }
+
+    public void setContractType(ContractType contractType) {
+        this.contractType = contractType;
+        touch();
+    }
+
+    public int getContractWeeklyHours() {
+        return contractWeeklyHours;
+    }
+
+    public void setContractWeeklyHours(int contractWeeklyHours) {
+        this.contractWeeklyHours = contractWeeklyHours;
+        touch();
+    }
+
     public String fullName() {
         return (firstName == null ? "" : firstName) + " " + (lastName == null ? "" : lastName);
     }
 }
-

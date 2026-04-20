@@ -4,6 +4,7 @@ import com.leadelmarche.common.Address;
 import com.leadelmarche.domain.customer.Customer;
 import com.leadelmarche.domain.inventory.Product;
 import com.leadelmarche.domain.inventory.ProductType;
+import com.leadelmarche.domain.people.ContractType;
 import com.leadelmarche.domain.people.Employee;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -110,6 +111,19 @@ public class SeedDataService {
             employee.setSupervisorBadge(i <= 6 ? "B010" : "");
             employee.setHomeAddress(new Address("Rue " + i, "Versailles", "7800" + (i % 10), "France"));
             employee.setWorkAddress(new Address("LeadelMarche Centre", "Versailles", "78000", "France"));
+            if (i <= 4) {
+                employee.setContractType(ContractType.CDI_35H);
+                employee.setContractWeeklyHours(35);
+            } else if (i <= 6) {
+                employee.setContractType(ContractType.CDI_ETUDIANT);
+                employee.setContractWeeklyHours(18);
+            } else if (i <= 8) {
+                employee.setContractType(ContractType.CDD);
+                employee.setContractWeeklyHours(35);
+            } else {
+                employee.setContractType(ContractType.INTERIM);
+                employee.setContractWeeklyHours(30);
+            }
             staffService.createEmployee(employee);
         }
     }

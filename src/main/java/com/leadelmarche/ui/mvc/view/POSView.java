@@ -101,4 +101,9 @@ public class POSView extends JFrame {
     public JButton changePaymentButton() { return changePaymentButton; }
     public JButton finalizeButton() { return finalizeButton; }
     public JTextArea cartArea() { return cartArea; }
+
+    public void setBadgePrefill(String badge, boolean editable) {
+        badgeField.setText(badge == null ? "" : badge);
+        badgeField.setEditable(editable);
+    }
 }

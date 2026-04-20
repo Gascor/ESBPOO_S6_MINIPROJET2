@@ -58,6 +58,18 @@ public class InventoryService {
             .findFirst();
     }
 
+    public List<Product> listWeightedProducts() {
+        return productRepository.findAll(true).stream()
+            .filter(Product::isWeighted)
+            .toList();
+    }
+
+    public List<Product> listPieceProductsWithoutBarcode() {
+        return productRepository.findAll(true).stream()
+            .filter(Product::isSoldByPieceWithoutBarcode)
+            .toList();
+    }
+
     public void addStock(String productId, String storeId, BigDecimal quantity) {
         if (quantity.signum() < 0) {
             throw new IllegalArgumentException("Quantity must be positive");
@@ -119,4 +131,3 @@ public class InventoryService {
         return alerts;
     }
 }
-

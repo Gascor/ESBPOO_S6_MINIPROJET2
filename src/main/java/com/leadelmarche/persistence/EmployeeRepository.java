@@ -1,6 +1,7 @@
 package com.leadelmarche.persistence;
 
 import com.leadelmarche.common.Address;
+import com.leadelmarche.domain.people.ContractType;
 import com.leadelmarche.domain.people.Employee;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,9 @@ public class EmployeeRepository extends AbstractTextRepository<Employee> {
         employee.setHomeAddress(parseAddress(field(fields, offset++)));
         employee.setWorkAddress(parseAddress(field(fields, offset++)));
         employee.setRole(field(fields, offset++));
-        employee.setSupervisorBadge(field(fields, offset));
+        employee.setSupervisorBadge(field(fields, offset++));
+        employee.setContractType(parseContractType(field(fields, offset++)));
+        employee.setContractWeeklyHours(parseInt(field(fields, offset), 35));
         return employee;
     }
 
@@ -34,6 +37,8 @@ public class EmployeeRepository extends AbstractTextRepository<Employee> {
         fields.add(serializeAddress(entity.getWorkAddress()));
         fields.add(entity.getRole());
         fields.add(entity.getSupervisorBadge());
+        fields.add(entity.getContractType().name());
+        fields.add(Integer.toString(entity.getContractWeeklyHours()));
         return fields;
     }
 
@@ -67,5 +72,20 @@ public class EmployeeRepository extends AbstractTextRepository<Employee> {
     private String safe(String value) {
         return value == null ? "" : value.replace(";", ",");
     }
-}
 
+    private ContractType parseContractType(String text) {
+        try {
+            return ContractType.valueOf(text);
+        } catch (Exception ex) {
+            return ContractType.CDI_35H;
+        }
+    }
+
+    private int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text);
+        } catch (Exception ex) {
+            return fallback;
+        }
+    }
+}

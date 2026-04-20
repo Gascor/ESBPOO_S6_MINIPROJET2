@@ -17,8 +17,15 @@ public class POSController {
     private String currentSaleId;
 
     public POSController(SalesService salesService) {
+        this(salesService, null);
+    }
+
+    public POSController(SalesService salesService, String prefilledBadge) {
         this.salesService = salesService;
         this.view = new POSView();
+        if (prefilledBadge != null && !prefilledBadge.isBlank()) {
+            this.view.setBadgePrefill(prefilledBadge, false);
+        }
         bindActions();
     }
 
@@ -141,4 +148,3 @@ public class POSController {
         JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
     }
 }
-

@@ -76,6 +76,23 @@ public class SalesService {
         return line;
     }
 
+    public SaleLine addLineByBarcodeWithMeasuredWeight(String saleId, String barcode, BigDecimal qty, BigDecimal measuredKg) {
+        if (qty == null || qty.signum() <= 0) {
+            throw new IllegalArgumentException("Quantity must be > 0");
+        }
+        Sale sale = requireDraftSale(saleId);
+        Product product = inventoryService.findByBarcode(barcode)
+            .orElseThrow(() -> new IllegalStateException("Unknown barcode: " + barcode));
+        if (product.isWeighted()) {
+            if (!fastCheckoutService.validateScannedWeight(product, measuredKg)) {
+                throw new IllegalStateException(fastCheckoutService.requestCashierHelp(sale.getPosId(), "Weight mismatch"));
+            }
+        }
+        SaleLine line = addOrMergeLine(saleId, product, qty, BigDecimal.ZERO);
+        recalculateAndPersistDraft(sale, draftLines.get(saleId));
+        return line;
+    }
+
     public SaleLine addWeightedLine(String saleId, ProductType productType, BigDecimal weightKg) {
         if (weightKg == null || weightKg.signum() <= 0) {
             throw new IllegalArgumentException("Weight must be > 0");
@@ -83,6 +100,33 @@ public class SalesService {
         Sale sale = requireDraftSale(saleId);
         Product product = inventoryService.findWeightedProductByType(productType)
             .orElseThrow(() -> new IllegalStateException("No weighted product for type: " + productType));
+        SaleLine line = addOrMergeLine(saleId, product, weightKg, weightKg);
+        recalculateAndPersistDraft(sale, draftLines.get(saleId));
+        return line;
+    }
+
+    public SaleLine addLineByProductId(String saleId, String productId, BigDecimal qty) {
+        if (qty == null || qty.signum() <= 0) {
+            throw new IllegalArgumentException("Quantity must be > 0");
+        }
+        Sale sale = requireDraftSale(saleId);
+        Product product = inventoryService.findProductById(productId)
+            .orElseThrow(() -> new IllegalStateException("Unknown product: " + productId));
+        SaleLine line = addOrMergeLine(saleId, product, qty, BigDecimal.ZERO);
+        recalculateAndPersistDraft(sale, draftLines.get(saleId));
+        return line;
+    }
+
+    public SaleLine addWeightedLineByProductId(String saleId, String productId, BigDecimal weightKg) {
+        if (weightKg == null || weightKg.signum() <= 0) {
+            throw new IllegalArgumentException("Weight must be > 0");
+        }
+        Sale sale = requireDraftSale(saleId);
+        Product product = inventoryService.findProductById(productId)
+            .orElseThrow(() -> new IllegalStateException("Unknown product: " + productId));
+        if (!product.isWeighted()) {
+            throw new IllegalStateException("Selected product is not weighted: " + product.getName());
+        }
         SaleLine line = addOrMergeLine(saleId, product, weightKg, weightKg);
         recalculateAndPersistDraft(sale, draftLines.get(saleId));
         return line;
@@ -123,6 +167,11 @@ public class SalesService {
         Sale sale = requireDraftSale(saleId);
         sale.setPaymentMode(mode);
         saleRepository.update(sale);
+    }
+
+    public String requestCashierHelp(String saleId, String reason) {
+        Sale sale = getSale(saleId);
+        return fastCheckoutService.requestCashierHelp(sale.getPosId(), reason == null ? "Unknown issue" : reason);
     }
 
     public List<SaleLine> getDraftLines(String saleId) {
