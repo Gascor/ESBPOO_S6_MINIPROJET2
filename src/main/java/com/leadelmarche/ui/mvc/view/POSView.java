@@ -2,6 +2,7 @@ package com.leadelmarche.ui.mvc.view;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -34,8 +35,9 @@ public class POSView extends JFrame {
 
     public POSView() {
         super("LeadelMarche - Point de Vente");
-        setSize(980, 700);
+        setSize(1000, 1000);
         setLocationRelativeTo(null);
+        Branding.applyWindowIcon(this);
 
         JPanel startPanel = new JPanel(new GridLayout(0, 2, 6, 6));
         startPanel.add(new JLabel("Point de vente"));
@@ -69,13 +71,19 @@ public class POSView extends JFrame {
         paymentPanel.add(finalizeButton);
 
         JPanel north = new JPanel(new BorderLayout());
+        north.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         north.add(startPanel, BorderLayout.NORTH);
         north.add(linePanel, BorderLayout.CENTER);
         north.add(paymentPanel, BorderLayout.SOUTH);
-        add(north, BorderLayout.NORTH);
 
         cartArea.setEditable(false);
-        add(new JScrollPane(cartArea), BorderLayout.CENTER);
+
+        JPanel content = new JPanel(new BorderLayout(0, 6));
+        content.add(north, BorderLayout.NORTH);
+        content.add(new JScrollPane(cartArea), BorderLayout.CENTER);
+
+        add(Branding.createHeader("Module Point de Vente"), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     public JTextField posIdField() { return posIdField; }
@@ -94,4 +102,3 @@ public class POSView extends JFrame {
     public JButton finalizeButton() { return finalizeButton; }
     public JTextArea cartArea() { return cartArea; }
 }
-

@@ -3,7 +3,7 @@ Mini Projet Java
 Réalisé par Lucas DA SILVA FERREIRA
 Etudiant IATIC 3 - ISTY - UVSQ
 
-Note Importante : Ce logiciel à beaucoup été inspiré de mon experience d'utilisation des logiciel suivant grace à mon experiences des outils de Auchan Retail France. Telle que, Gestion des stock (l'outil GCM), Gestion du personnel (l'outil Saturne), et encore Extenda Retail (Logiciel de Caisse), par des soucis de temps je n'ai pas fait d'interface "User-friendly", mais les axes d'améliorations serait les suivantes :
+Note Importante : Ce logiciel à beaucoup été inspiré de mon experience d'utilisation des logiciel suivant grace à mon experiences des outils de **Auchan Retail France**. Telle que, Gestion des stock (l'outil GCM), Gestion du personnel (l'outil Satu*\*\*\*), et encore Extenda Retail (Logiciel de Caisse), **par des soucis de temps je n'ai pas fait d'interface "User-friendly"**, mais les **axes d'améliorations** serait les suivantes :
 
 - Ajout d'une interface graphique avec des boutons plus stylisé et contrastés. 
 - Implementation de cette interface pour poste mobiles. (Téléphone Scanner de Travail)

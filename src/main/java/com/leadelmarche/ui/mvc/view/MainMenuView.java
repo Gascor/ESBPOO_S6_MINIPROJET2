@@ -2,11 +2,10 @@ package com.leadelmarche.ui.mvc.view;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 public class MainMenuView extends JFrame {
     private final JButton stockButton = new JButton("Module Stock");
@@ -19,11 +18,12 @@ public class MainMenuView extends JFrame {
     public MainMenuView() {
         super("LeadelMarche - Menu principal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(420, 340);
+        setSize(550, 350);
         setLocationRelativeTo(null);
+        Branding.applyWindowIcon(this);
 
-        JLabel title = new JLabel("Selectionner un module", SwingConstants.CENTER);
         JPanel buttons = new JPanel(new GridLayout(6, 1, 8, 8));
+        buttons.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         buttons.add(stockButton);
         buttons.add(customerButton);
         buttons.add(staffButton);
@@ -31,8 +31,11 @@ public class MainMenuView extends JFrame {
         buttons.add(statsButton);
         buttons.add(exitButton);
 
-        add(title, BorderLayout.NORTH);
-        add(buttons, BorderLayout.CENTER);
+        JPanel content = new JPanel(new BorderLayout());
+        content.add(buttons, BorderLayout.CENTER);
+
+        add(Branding.createHeader("Selectionner un module"), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     public JButton stockButton() {

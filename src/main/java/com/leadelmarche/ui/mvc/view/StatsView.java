@@ -1,5 +1,6 @@
 package com.leadelmarche.ui.mvc.view;
 
+import com.leadelmarche.service.StatisticsService;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.time.LocalDate;
@@ -11,9 +12,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.JTextArea;
-import com.leadelmarche.service.StatisticsService;
+import javax.swing.JTextField;
 
 public class StatsView extends JFrame {
     private final JComboBox<StatisticsService.StatisticOption> statisticCombo = new JComboBox<>();
@@ -36,8 +36,9 @@ public class StatsView extends JFrame {
 
     public StatsView() {
         super("LeadelMarche - Statistiques");
-        setSize(980, 700);
+        setSize(1000, 1000);
         setLocationRelativeTo(null);
+        Branding.applyWindowIcon(this);
 
         JPanel analysisPanel = new JPanel(new GridLayout(3, 4, 8, 8));
         analysisPanel.setBorder(BorderFactory.createTitledBorder("Analyse"));
@@ -84,6 +85,7 @@ public class StatsView extends JFrame {
         absencePanel.add(addAbsenceButton);
 
         JPanel topPanel = new JPanel(new GridLayout(4, 1, 8, 8));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         topPanel.add(analysisPanel);
         topPanel.add(comparePanel);
         topPanel.add(customStatPanel);
@@ -97,8 +99,13 @@ public class StatsView extends JFrame {
         absenceDateField.setToolTipText("Format attendu: YYYY-MM-DD");
 
         outputArea.setEditable(false);
-        add(topPanel, BorderLayout.NORTH);
-        add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        JPanel content = new JPanel(new BorderLayout(0, 6));
+        content.add(topPanel, BorderLayout.NORTH);
+        content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        add(Branding.createHeader("Module Statistiques"), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     public JComboBox<StatisticsService.StatisticOption> statisticCombo() {

@@ -2,6 +2,7 @@ package com.leadelmarche.ui.mvc.view;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -24,8 +25,9 @@ public class CustomerView extends JFrame {
 
     public CustomerView() {
         super("LeadelMarche - Clients");
-        setSize(800, 620);
+        setSize(1000, 1000);
         setLocationRelativeTo(null);
+        Branding.applyWindowIcon(this);
 
         JPanel form = new JPanel(new GridLayout(0, 2, 6, 6));
         form.add(new JLabel("Prenom"));
@@ -47,12 +49,18 @@ public class CustomerView extends JFrame {
         search.add(refreshButton);
 
         JPanel north = new JPanel(new BorderLayout());
+        north.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         north.add(form, BorderLayout.CENTER);
         north.add(search, BorderLayout.SOUTH);
-        add(north, BorderLayout.NORTH);
 
         outputArea.setEditable(false);
-        add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        JPanel content = new JPanel(new BorderLayout(0, 6));
+        content.add(north, BorderLayout.NORTH);
+        content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        add(Branding.createHeader("Module Clients"), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     public JTextField firstNameField() { return firstNameField; }
@@ -66,4 +74,3 @@ public class CustomerView extends JFrame {
     public JButton refreshButton() { return refreshButton; }
     public JTextArea outputArea() { return outputArea; }
 }
-

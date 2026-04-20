@@ -2,6 +2,7 @@ package com.leadelmarche.ui.mvc.view;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -35,8 +36,9 @@ public class StockView extends JFrame {
 
     public StockView() {
         super("LeadelMarche - Stock");
-        setSize(900, 700);
+        setSize(1000, 1000);
         setLocationRelativeTo(null);
+        Branding.applyWindowIcon(this);
 
         JPanel addForm = new JPanel(new GridLayout(0, 2, 6, 6));
         addForm.add(new JLabel("SKU"));
@@ -72,14 +74,20 @@ public class StockView extends JFrame {
         searchPanel.add(refreshButton);
 
         JPanel top = new JPanel(new BorderLayout());
+        top.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         top.add(addForm, BorderLayout.NORTH);
         top.add(restockForm, BorderLayout.CENTER);
         top.add(searchPanel, BorderLayout.SOUTH);
 
         outputArea.setEditable(false);
         outputArea.setLineWrap(false);
-        add(top, BorderLayout.NORTH);
-        add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        JPanel content = new JPanel(new BorderLayout(0, 6));
+        content.add(top, BorderLayout.NORTH);
+        content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        add(Branding.createHeader("Module Stock"), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     public JTextField skuField() { return skuField; }
@@ -100,4 +108,3 @@ public class StockView extends JFrame {
     public JButton refreshButton() { return refreshButton; }
     public JTextArea outputArea() { return outputArea; }
 }
-
