@@ -1,0 +1,17 @@
+TO: lucas-dasilvaferreira@hotmail.com
+SUBJECT: Ticket LeadelMarche 3fff5591-2acc-46be-8b42-9ef0202ca7e2
+
+=== LEADELMARCHE ===
+Ticket: V-20260420122246-A99B4F
+Date: 2026-04-20 12:23:02
+Caissier: SELF-CHECKOUT
+Client: Client Anonyme
+--------------------------------------
+Avocat x1
+  PU HT: 1.10  TTC ligne: 1.1605
+--------------------------------------
+Sous-total HT: 1.10
+TVA: 0.0605
+Remise: 0.00
+TOTAL TTC: 1.1605
+==============================
