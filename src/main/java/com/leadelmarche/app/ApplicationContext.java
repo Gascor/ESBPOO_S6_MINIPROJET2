@@ -1,5 +1,7 @@
 package com.leadelmarche.app;
 
+import com.leadelmarche.domain.promotion.PromotionEffect;
+import com.leadelmarche.domain.promotion.PromotionRuleType;
 import com.leadelmarche.persistence.AbsenceRepository;
 import com.leadelmarche.persistence.CustomerRepository;
 import com.leadelmarche.persistence.EmployeeRepository;
@@ -19,17 +21,15 @@ import com.leadelmarche.service.MailOutboxService;
 import com.leadelmarche.service.PromotionCatalogService;
 import com.leadelmarche.service.PromotionService;
 import com.leadelmarche.service.ReceiptService;
-import com.leadelmarche.service.ScheduleService;
 import com.leadelmarche.service.SalesService;
+import com.leadelmarche.service.ScheduleService;
 import com.leadelmarche.service.SeedDataService;
 import com.leadelmarche.service.SimplePdfService;
 import com.leadelmarche.service.StaffService;
 import com.leadelmarche.service.StatisticsService;
-import com.leadelmarche.domain.promotion.PromotionEffect;
-import com.leadelmarche.domain.promotion.PromotionRuleType;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.nio.file.Path;
+import java.time.LocalDate;
 
 public class ApplicationContext {
     private static final ApplicationContext INSTANCE = new ApplicationContext();
@@ -92,9 +92,10 @@ public class ApplicationContext {
             customerRepository,
             saleRepository,
             saleLineRepository,
+            receiptRepository,
             absenceService
         );
-        this.seedDataService = new SeedDataService(inventoryService, customerService, staffService, absenceService);
+        this.seedDataService = new SeedDataService(inventoryService, customerService, staffService, absenceService, scheduleService);
         this.seedDataService.loadDefaultData();
         seedPromotions();
     }

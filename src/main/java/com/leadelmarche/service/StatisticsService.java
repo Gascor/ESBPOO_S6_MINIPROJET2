@@ -5,6 +5,7 @@ import com.leadelmarche.domain.sales.Sale;
 import com.leadelmarche.domain.sales.SaleLine;
 import com.leadelmarche.domain.sales.SaleStatus;
 import com.leadelmarche.persistence.CustomerRepository;
+import com.leadelmarche.persistence.ReceiptRepository;
 import com.leadelmarche.persistence.SaleLineRepository;
 import com.leadelmarche.persistence.SaleRepository;
 import java.math.BigDecimal;
@@ -98,6 +99,7 @@ public class StatisticsService {
     private final CustomerRepository customerRepository;
     private final SaleRepository saleRepository;
     private final SaleLineRepository saleLineRepository;
+    private final ReceiptRepository receiptRepository;
     private final AbsenceService absenceService;
     private final Map<String, StatisticOption> optionsById = new LinkedHashMap<>();
     private final Map<String, StatisticComputer> computersById = new LinkedHashMap<>();
@@ -106,11 +108,13 @@ public class StatisticsService {
         CustomerRepository customerRepository,
         SaleRepository saleRepository,
         SaleLineRepository saleLineRepository,
+        ReceiptRepository receiptRepository,
         AbsenceService absenceService
     ) {
         this.customerRepository = customerRepository;
         this.saleRepository = saleRepository;
         this.saleLineRepository = saleLineRepository;
+        this.receiptRepository = receiptRepository;
         this.absenceService = absenceService;
         registerDefaultStats();
     }
@@ -171,6 +175,24 @@ public class StatisticsService {
             safeLabel,
             "produits",
             (start, end) -> computeSoldQuantityForProduct(start, end, searchToken)
+        );
+        return optionsById.get(id);
+    }
+
+    public StatisticOption registerPromotionSalesStatistic(String label, String promotionNamePartial) {
+        if (promotionNamePartial == null || promotionNamePartial.isBlank()) {
+            throw new IllegalArgumentException("Nom promotion obligatoire pour creer une statistique");
+        }
+        String id = "CUSTOM_PROMOTION_" + UUID.randomUUID();
+        String safeLabel = label == null || label.isBlank()
+            ? "Ventes pour la promotion: " + promotionNamePartial.trim()
+            : label.trim();
+        String searchToken = promotionNamePartial.trim();
+        registerCoreStatistic(
+            id,
+            safeLabel,
+            "produits",
+            (start, end) -> computeSoldQuantityForPromotion(start, end, searchToken)
         );
         return optionsById.get(id);
     }
@@ -248,6 +270,26 @@ public class StatisticsService {
         return saleLineRepository.findAll(false).stream()
             .filter(line -> finalizedSaleIds.contains(line.getSaleId()))
             .filter(line -> SearchNormalizer.containsNormalized(line.getProductName(), productNamePartial))
+            .map(SaleLine::getQuantity)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal computeSoldQuantityForPromotion(LocalDate start, LocalDate end, String promotionNamePartial) {
+        Map<String, String> receiptBodyBySaleId = receiptRepository.findAll(false).stream()
+            .collect(Collectors.toMap(receipt -> receipt.getSaleId(), receipt -> receipt.getTextBody(), (left, right) -> left));
+
+        Set<String> promoSaleIds = saleRepository.findAll(false).stream()
+            .filter(this::isFinalized)
+            .filter(sale -> inPeriod(sale.getSoldAt(), start, end))
+            .filter(sale -> SearchNormalizer.containsNormalized(receiptBodyBySaleId.get(sale.getId()), promotionNamePartial))
+            .map(Sale::getId)
+            .collect(Collectors.toSet());
+
+        if (promoSaleIds.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return saleLineRepository.findAll(false).stream()
+            .filter(line -> promoSaleIds.contains(line.getSaleId()))
             .map(SaleLine::getQuantity)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

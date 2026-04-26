@@ -6,8 +6,10 @@ import com.leadelmarche.domain.inventory.Product;
 import com.leadelmarche.domain.inventory.ProductType;
 import com.leadelmarche.domain.people.ContractType;
 import com.leadelmarche.domain.people.Employee;
+import com.leadelmarche.domain.people.WorkShift;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 public class SeedDataService {
@@ -15,17 +17,20 @@ public class SeedDataService {
     private final CustomerService customerService;
     private final StaffService staffService;
     private final AbsenceService absenceService;
+    private final ScheduleService scheduleService;
 
     public SeedDataService(
         InventoryService inventoryService,
         CustomerService customerService,
         StaffService staffService,
-        AbsenceService absenceService
+        AbsenceService absenceService,
+        ScheduleService scheduleService
     ) {
         this.inventoryService = inventoryService;
         this.customerService = customerService;
         this.staffService = staffService;
         this.absenceService = absenceService;
+        this.scheduleService = scheduleService;
     }
 
     public void loadDefaultData() {
@@ -33,6 +38,7 @@ public class SeedDataService {
         seedCustomers();
         seedEmployees();
         seedAbsences();
+        seedSchedulesForNextFourMonths();
     }
 
     private void seedProducts() {
@@ -99,7 +105,8 @@ public class SeedDataService {
     }
 
     private void seedEmployees() {
-        if (staffService.listEmployees(false).size() >= 10) {
+        List<Employee> existing = staffService.listEmployees(false);
+        if (existing.size() >= 10 && existing.stream().anyMatch(e -> "0166394".equalsIgnoreCase(e.getBadgeNumber()))) {
             return;
         }
         for (int i = 1; i <= 10; i++) {
@@ -126,6 +133,21 @@ public class SeedDataService {
             }
             staffService.createEmployee(employee);
         }
+
+        // Keep a realistic default profile for the workspace owner.
+        if (staffService.findByBadge("0166394").isEmpty()) {
+            Employee lucas = new Employee();
+            lucas.setBadgeNumber("0166394");
+            lucas.setFirstName("Lucas");
+            lucas.setLastName("Da Silva Ferreira");
+            lucas.setRole("Conseiller Commercial");
+            lucas.setSupervisorBadge("B010");
+            lucas.setHomeAddress(new Address("12 Rue de la Gare", "Versailles", "78000", "France"));
+            lucas.setWorkAddress(new Address("LeadelMarche Centre", "Versailles", "78000", "France"));
+            lucas.setContractType(ContractType.CDI_ETUDIANT);
+            lucas.setContractWeeklyHours(15);
+            staffService.createEmployee(lucas);
+        }
     }
 
     private void seedAbsences() {
@@ -141,6 +163,20 @@ public class SeedDataService {
             };
             LocalDate date = LocalDate.now().minusDays(i * 3L);
             absenceService.recordAbsence(badge, date, type, "Seed " + type.toLowerCase());
+        }
+    }
+
+    private void seedSchedulesForNextFourMonths() {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate limit = today.plusMonths(4);
+        while (!monday.isAfter(limit)) {
+            List<WorkShift> week = scheduleService.getWeekSchedule(monday);
+            boolean hasActiveWeek = week.stream().anyMatch(WorkShift::isActive);
+            if (!hasActiveWeek) {
+                scheduleService.generateWeeklySchedule(monday, 3);
+            }
+            monday = monday.plusWeeks(1);
         }
     }
 }

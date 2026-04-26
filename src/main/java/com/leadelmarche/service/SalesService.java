@@ -83,10 +83,8 @@ public class SalesService {
         Sale sale = requireDraftSale(saleId);
         Product product = inventoryService.findByBarcode(barcode)
             .orElseThrow(() -> new IllegalStateException("Unknown barcode: " + barcode));
-        if (product.isWeighted()) {
-            if (!fastCheckoutService.validateScannedWeight(product, measuredKg)) {
-                throw new IllegalStateException(fastCheckoutService.requestCashierHelp(sale.getPosId(), "Weight mismatch"));
-            }
+        if (!fastCheckoutService.validateScannedWeight(product, measuredKg)) {
+            throw new IllegalStateException(fastCheckoutService.requestCashierHelp(sale.getPosId(), "Weight mismatch"));
         }
         SaleLine line = addOrMergeLine(saleId, product, qty, BigDecimal.ZERO);
         recalculateAndPersistDraft(sale, draftLines.get(saleId));
@@ -205,7 +203,6 @@ public class SalesService {
         sale.recalculateTotals(lines);
         sale.setDiscountTotal(promotionComputation.getImmediateDiscount());
         sale.setLoyaltyCredit(promotionComputation.getLoyaltyCredit());
-        sale.setTotalTTC(sale.getTotalTTC().subtract(promotionComputation.getImmediateDiscount()).max(BigDecimal.ZERO));
         sale.setStatus(SaleStatus.FINALIZED);
         sale.setSoldAt(LocalDateTime.now());
         saleRepository.update(sale);

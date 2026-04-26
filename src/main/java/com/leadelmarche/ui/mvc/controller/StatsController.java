@@ -38,7 +38,6 @@ public class StatsController {
         );
         view.addCustomStatButton().addActionListener(e -> addCustomStatistic());
         view.emailReportButton().addActionListener(e -> emailCurrentReport());
-        view.addAbsenceButton().addActionListener(e -> registerAbsence());
     }
 
     private void refreshStatisticList(String preferredStatId) {
@@ -68,6 +67,8 @@ public class StatsController {
                 (StatisticsService.StatisticOption) view.statisticCombo().getSelectedItem();
             if (selected == null) {
                 view.outputArea().setText("Aucune statistique disponible.");
+                view.setResultHeader("Resultat: -");
+                view.updateChart("TABLEAU", "A", BigDecimal.ZERO, "", null, "");
                 return;
             }
             LocalDate startA = parseDate(view.periodStartField().getText(), "Debut periode A");
@@ -77,6 +78,15 @@ public class StatsController {
                 BigDecimal value = statisticsService.compute(selected.getId(), startA, endA);
                 lastReportText = renderSingle(selected, startA, endA, value, displayMode);
                 view.outputArea().setText(lastReportText);
+                view.setResultHeader("Resultat: " + selected.getLabel() + " = " + formatValue(value) + " " + selected.getUnit());
+                view.updateChart(
+                    displayMode,
+                    "A (" + startA + " -> " + endA + ")",
+                    value,
+                    "",
+                    null,
+                    selected.getUnit()
+                );
                 return;
             }
             LocalDate startB = parseDate(view.compareStartField().getText(), "Debut periode B");
@@ -90,6 +100,18 @@ public class StatsController {
             );
             lastReportText = renderComparison(result, startA, endA, startB, endB, displayMode);
             view.outputArea().setText(lastReportText);
+            view.setResultHeader(
+                "Resultat: Delta " + formatValue(result.getDeltaAbsolute()) + " " + result.getOption().getUnit() +
+                " (" + formatValue(result.getDeltaPercent()) + "%)"
+            );
+            view.updateChart(
+                displayMode,
+                "A (" + startA + " -> " + endA + ")",
+                result.getPeriodA(),
+                "B (" + startB + " -> " + endB + ")",
+                result.getPeriodB(),
+                result.getOption().getUnit()
+            );
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
@@ -98,8 +120,16 @@ public class StatsController {
     private void addCustomStatistic() {
         try {
             String name = view.customStatNameField().getText().trim();
-            String productToken = view.customProductFilterField().getText().trim();
-            StatisticsService.StatisticOption created = statisticsService.registerProductSalesStatistic(name, productToken);
+            String token = view.customFilterField().getText().trim();
+            String type = view.customStatTypeCombo().getSelectedItem() == null
+                ? "PRODUIT"
+                : view.customStatTypeCombo().getSelectedItem().toString();
+            StatisticsService.StatisticOption created;
+            if ("PROMOTION".equals(type)) {
+                created = statisticsService.registerPromotionSalesStatistic(name, token);
+            } else {
+                created = statisticsService.registerProductSalesStatistic(name, token);
+            }
             refreshStatisticList(created.getId());
             view.outputArea().append("\nNouvelle statistique ajoutee: " + created.getLabel() + '\n');
         } catch (Exception ex) {
@@ -125,20 +155,6 @@ public class StatsController {
             String report = view.outputArea().getText().isBlank() ? lastReportText : view.outputArea().getText();
             String path = mailOutboxService.sendMail(to, title, report);
             JOptionPane.showMessageDialog(view, "Statistique envoyee (outbox): " + path, "Email", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void registerAbsence() {
-        try {
-            String badge = view.absenceBadgeField().getText().trim();
-            LocalDate date = parseDate(view.absenceDateField().getText(), "Date absence");
-            String type = view.absenceTypeCombo().getSelectedItem().toString();
-            String note = view.absenceNoteField().getText().trim();
-            statisticsService.recordAbsence(badge, date, type, note);
-            view.outputArea().append("Absence enregistree pour " + badge + " le " + date + " (" + type + ")\n");
-            computeStatistic();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }

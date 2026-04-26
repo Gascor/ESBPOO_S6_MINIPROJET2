@@ -9,6 +9,7 @@ import com.leadelmarche.service.InventoryService;
 import com.leadelmarche.service.SalesService;
 import com.leadelmarche.ui.mvc.view.MiniCalculatorDialog;
 import com.leadelmarche.ui.mvc.view.SelfCheckoutView;
+import java.awt.Color;
 import java.math.BigDecimal;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -34,6 +35,7 @@ public class SelfCheckoutController {
         this.inventoryService = inventoryService;
         this.view = new SelfCheckoutView();
         loadProductChoices();
+        initializeViewState();
         bindActions();
     }
 
@@ -51,6 +53,14 @@ public class SelfCheckoutController {
         view.finalizeButton().addActionListener(e -> finalizeSale());
         view.printTicketButton().addActionListener(e -> printLastTicket());
         view.emailTicketButton().addActionListener(e -> emailLastTicket());
+    }
+
+    private void initializeViewState() {
+        view.setCheckoutControlsEnabled(false);
+        view.setSessionStatus("Session: en attente de demarrage", new Color(95, 95, 95));
+        view.setWeightStatus("Balance: controle en attente", new Color(95, 95, 95));
+        view.setAssistanceStatus("Assistance: aucune demande", new Color(95, 95, 95));
+        view.setTotalDisplay("Total TTC: 0.00");
     }
 
     private void loadProductChoices() {
@@ -74,6 +84,10 @@ public class SelfCheckoutController {
             );
             currentSaleId = sale.getId();
             view.saleIdLabel().setText("Sale ID: " + currentSaleId + " / " + sale.getSaleNumber());
+            view.setCheckoutControlsEnabled(true);
+            view.setSessionStatus("Session: vente " + sale.getSaleNumber() + " en cours", new Color(32, 108, 60));
+            view.setWeightStatus("Balance: prete pour scan", new Color(95, 95, 95));
+            view.setAssistanceStatus("Assistance: aucune demande", new Color(95, 95, 95));
             renderDraft("Caisse automatique demarree");
         } catch (Exception ex) {
             showError(ex);
@@ -89,8 +103,13 @@ public class SelfCheckoutController {
                 parseBigDecimal(view.qtyField().getText(), BigDecimal.ONE),
                 parseBigDecimal(view.measuredWeightField().getText(), BigDecimal.ZERO)
             );
+            view.setWeightStatus("Balance: produit valide", new Color(32, 108, 60));
             renderDraft("Produit scanne et valide");
         } catch (Exception ex) {
+            if (ex.getMessage() != null && ex.getMessage().contains("HELP REQUEST")) {
+                view.setWeightStatus("Balance: ecart detecte", new Color(160, 55, 35));
+                view.setAssistanceStatus("Assistance: caissier appele (blocage balance)", new Color(160, 55, 35));
+            }
             showError(ex);
         }
     }
@@ -107,6 +126,7 @@ public class SelfCheckoutController {
                 selected.id(),
                 parseBigDecimal(view.pieceQtyField().getText(), BigDecimal.ONE)
             );
+            view.setWeightStatus("Balance: non requise sur produit a la piece", new Color(95, 95, 95));
             renderDraft("Produit a la piece ajoute");
         } catch (Exception ex) {
             showError(ex);
@@ -125,6 +145,7 @@ public class SelfCheckoutController {
                 selected.id(),
                 parseBigDecimal(view.manualWeightField().getText(), BigDecimal.ONE)
             );
+            view.setWeightStatus("Balance: produit au poids saisi manuellement", new Color(95, 95, 95));
             renderDraft("Produit au poids ajoute");
         } catch (Exception ex) {
             showError(ex);
@@ -135,6 +156,7 @@ public class SelfCheckoutController {
         try {
             ensureSaleStarted();
             String message = salesService.requestCashierHelp(currentSaleId, "Assistance demandee en caisse automatique");
+            view.setAssistanceStatus("Assistance: demande envoyee", new Color(160, 110, 20));
             JOptionPane.showMessageDialog(view, message, "Assistance", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             showError(ex);
@@ -156,7 +178,11 @@ public class SelfCheckoutController {
                 view.ticketEmailField().setText(receipt.getCustomerEmail());
             }
             currentSaleId = null;
+            view.setCheckoutControlsEnabled(false);
             view.saleIdLabel().setText("Sale ID: -");
+            view.setSessionStatus("Session: vente finalisee", new Color(20, 100, 140));
+            view.setWeightStatus("Balance: en attente d'une nouvelle vente", new Color(95, 95, 95));
+            view.setAssistanceStatus("Assistance: aucune demande", new Color(95, 95, 95));
             JOptionPane.showMessageDialog(view, "Paiement finalise. Ticket cree.", "OK", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             showError(ex);
@@ -200,6 +226,7 @@ public class SelfCheckoutController {
         sb.append("TVA: ").append(sale.getTotalVat()).append('\n');
         sb.append("Total TTC: ").append(sale.getTotalTTC()).append('\n');
         view.cartArea().setText(sb.toString());
+        view.setTotalDisplay("Total TTC: " + sale.getTotalTTC());
     }
 
     private void ensureSaleStarted() {
@@ -216,7 +243,7 @@ public class SelfCheckoutController {
 
     private BigDecimal parseBigDecimal(String value, BigDecimal fallback) {
         try {
-            return new BigDecimal(value.trim());
+            return new BigDecimal(value.trim().replace(',', '.'));
         } catch (Exception ex) {
             return fallback;
         }
