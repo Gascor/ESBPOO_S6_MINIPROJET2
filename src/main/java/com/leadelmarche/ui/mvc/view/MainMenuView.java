@@ -36,7 +36,20 @@ public class MainMenuView extends JFrame {
         JPanel content = new JPanel(new BorderLayout());
         content.add(buttons, BorderLayout.CENTER);
 
-        add(Branding.createHeader("Selectionner un module"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Selectionner un module",
+                "Aide - Menu principal",
+                "Choisir un module selon votre tache:\n"
+                    + "- Stock: produits, stock, alertes\n"
+                    + "- Clients: cartes fidelite et fiche client\n"
+                    + "- Personnel: absences et planning\n"
+                    + "- Point de Vente: caisse normale ou automatique\n"
+                    + "- Promotions: creation et suivi\n"
+                    + "- Statistiques: indicateurs, comparaison, envoi mail"
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

@@ -80,7 +80,18 @@ public class PromotionView extends JFrame {
         content.add(top, BorderLayout.NORTH);
         content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Promotions"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Promotions",
+                "Aide - Module Promotions",
+                "1) Definir nom, periode, type et effet de promotion.\n"
+                    + "2) Product ID vide = promotion globale.\n"
+                    + "3) BUY_X_GET_Y: renseigner Achetes et Offerts.\n"
+                    + "4) PERCENT_ON_NTH: renseigner nth item et % remise.\n"
+                    + "5) Desactivation via ID promotion."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

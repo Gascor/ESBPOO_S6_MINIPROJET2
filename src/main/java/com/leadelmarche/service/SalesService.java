@@ -283,6 +283,7 @@ public class SalesService {
             lines.forEach(l -> l.setDiscountAmount(BigDecimal.ZERO));
             return;
         }
+        // Repartition proportionnelle de la remise sur les lignes HT.
         BigDecimal baseSum = lines.stream()
             .map(l -> l.getUnitPriceHT().multiply(l.getQuantity()))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -294,6 +295,7 @@ public class SalesService {
             SaleLine line = lines.get(i);
             BigDecimal discount;
             if (i == lines.size() - 1) {
+                // Derniere ligne = rattrapage du reliquat d'arrondi pour conserver le total exact.
                 discount = totalDiscount.subtract(distributed);
             } else {
                 BigDecimal ratio = line.getUnitPriceHT().multiply(line.getQuantity()).divide(baseSum, 8, RoundingMode.HALF_UP);

@@ -115,7 +115,18 @@ public class StatsView extends JFrame {
         content.add(topPanel, BorderLayout.NORTH);
         content.add(centerSplit, BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Statistiques"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Statistiques",
+                "Aide - Statistiques",
+                "1) Choisir une statistique et une periode A puis Calculer.\n"
+                    + "2) Activer Comparer A et B pour soldes A vs A-1.\n"
+                    + "3) Choisir l'affichage: tableau, barres, camembert.\n"
+                    + "4) Ajouter une statistique personnalisee (produit/promotion).\n"
+                    + "5) Envoyer le rapport par mail via l'outbox."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

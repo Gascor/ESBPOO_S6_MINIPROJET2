@@ -157,7 +157,18 @@ public class SelfCheckoutView extends JFrame {
         content.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         content.add(splitPane, BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Caisse Automatique"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Caisse Automatique",
+                "Aide - Caisse automatique",
+                "1) Demarrer une vente.\n"
+                    + "2) Scan: code-barres + quantite + poids mesure.\n"
+                    + "3) Sans scan: produit a la piece ou au poids.\n"
+                    + "4) En cas de blocage, cliquer sur Appeler un caissier.\n"
+                    + "5) Finaliser, puis imprimer ou envoyer le ticket."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

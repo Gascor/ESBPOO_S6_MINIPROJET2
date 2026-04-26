@@ -10,8 +10,8 @@ Le fichier [uml.txt](/c:/Users/lucas/Desktop/ISTY/Projet%20ISTY/ESBPOO_S6_MINIPR
 - diagramme de communication du process de vente (incluant caisse rapide)
 
 Pour les renderers qui n'acceptent pas plusieurs blocs `@startuml` dans une meme source string, utiliser les fichiers separes:
-- [class_diagram.puml](/c:/Users/lucas/Desktop/ISTY/Projet%20ISTY/ESBPOO_S6_MINIPROJET2/doc/dossier_conception/class_diagram.puml)
-- [communication_diagram.puml](/c:/Users/lucas/Desktop/ISTY/Projet%20ISTY/ESBPOO_S6_MINIPROJET2/doc/dossier_conception/communication_diagram.puml)
+- [class_diagram.puml](class_diagram.puml)
+- [communication_diagram.puml](communication_diagram.puml)
 
 ## 2) Perimetre fonctionnel
 Les modules couverts sont:

@@ -108,7 +108,18 @@ public class StockView extends JFrame {
         content.add(top, BorderLayout.NORTH);
         content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Stock"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Stock",
+                "Aide - Module Stock",
+                "1) Renseigner la fiche produit puis cliquer sur Ajouter Produit.\n"
+                    + "2) Utiliser Product ID pour mise a jour / desactivation.\n"
+                    + "3) Recharger stock par magasin avec Product ID + Store ID + quantite.\n"
+                    + "4) Consulter stock inter-succursales via Product ID.\n"
+                    + "5) Le panneau resultat affiche aussi les alertes de stock bas."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

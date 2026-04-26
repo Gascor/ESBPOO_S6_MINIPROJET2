@@ -1,29 +1,34 @@
-﻿@startuml
+@startuml
 title LeadelMarche - Diagramme de classes global (MVC + metier + persistance)
 
 skinparam classAttributeIconSize 0
 skinparam dpi 300
 skinparam linetype ortho
-skinparam ranksep 35
-skinparam nodesep 25
+skinparam ranksep 28
+skinparam nodesep 10
 top to bottom direction
-scale max 4200 width
+scale max 1600 width
 
-package "app" {
+package "app" as app_pkg {
+  class LeadelMarcheApp {
+    + main(args: String[]): void
+  }
+
   class ApplicationContext <<Singleton>> {
-    - inventoryService: InventoryService
-    - staffService: StaffService
-    - customerService: CustomerService
-    - salesService: SalesService
-    - promoService: PromotionService
-    - statsService: StatisticsService
-    - database: TextFileDatabase
-    - posControllers: List<POSController>
-    + createPOSController(posName: String): POSController
+    + getInstance(): ApplicationContext
+    + inventoryService(): InventoryService
+    + staffService(): StaffService
+    + absenceService(): AbsenceService
+    + scheduleService(): ScheduleService
+    + customerService(): CustomerService
+    + promotionCatalogService(): PromotionCatalogService
+    + salesService(): SalesService
+    + statisticsService(): StatisticsService
+    + mailOutboxService(): MailOutboxService
   }
 }
 
-package "common" {
+package "common" as common_pkg {
   interface Activable {
     + isActive(): boolean
     + setActive(active: boolean)
@@ -49,7 +54,7 @@ package "common" {
   }
 }
 
-package "domain.inventory" {
+package "domain.inventory" as domain_inventory_pkg {
   enum ProductType {
     ALIMENTAIRE
     MEDECINE
@@ -81,14 +86,6 @@ package "domain.inventory" {
     + availableQuantity(): BigDecimal
   }
 
-  class StockAlert <<Entity>> {
-    + productId: String
-    + storeId: String
-    + thresholdPercent: BigDecimal
-    + triggeredAt: LocalDateTime
-    + acknowledged: boolean
-  }
-
   class Store <<Entity>> {
     + storeId: String
     + name: String
@@ -97,7 +94,7 @@ package "domain.inventory" {
   }
 }
 
-package "domain.people" {
+package "domain.people" as domain_people_pkg {
   enum ContractType {
     CDI_35H
     CDI_ETUDIANT
@@ -113,45 +110,31 @@ package "domain.people" {
     + workAddress: Address
     + role: String
     + supervisorBadge: String
-  }
-
-  class WorkContract <<Entity>> {
-    + employeeId: String
     + contractType: ContractType
-    + weeklyHoursMin: int
-    + weeklyHoursMax: int
-    + startDate: LocalDate
-    + endDate: LocalDate
+    + contractWeeklyHours: int
   }
 
-  class LeaveRequest <<Entity>> {
-    + employeeId: String
-    + startDate: LocalDate
-    + endDate: LocalDate
-    + reason: String
-    + status: String
+  class StaffAbsence <<Entity>> {
+    + badgeNumber: String
+    + absenceDate: LocalDate
+    + type: String
+    + note: String
   }
 
-  class Shift <<Entity>> {
+  class WorkShift <<Entity>> {
     + employeeId: String
-    + storeId: String
-    + day: LocalDate
+    + badgeNumber: String
+    + employeeName: String
+    + shiftDate: LocalDate
     + startTime: LocalTime
     + endTime: LocalTime
-    + lunchBreakMinutes: int
-    + shortBreaksCount: int
-  }
-
-  class StaffingAlert <<Entity>> {
-    + storeId: String
-    + periodStart: LocalDate
-    + periodEnd: LocalDate
-    + missingHeadcount: int
-    + createdAt: LocalDateTime
+    + paidMultiplier: BigDecimal
+    + breakPlan: String
+    + weekId: String
   }
 }
 
-package "domain.customer" {
+package "domain.customer" as domain_customer_pkg {
   class LoyaltyAccount <<Entity>> {
     + cardNumber: String
     + potBalance: BigDecimal
@@ -168,12 +151,17 @@ package "domain.customer" {
   }
 }
 
-package "domain.sales" {
+package "domain.sales" as domain_sales_pkg {
   enum PaymentMode {
     CASH
     CARD
     MOBILE
     VOUCHER
+  }
+
+  enum SaleStatus {
+    DRAFT
+    FINALIZED
   }
 
   class POS <<Entity>> {
@@ -193,20 +181,24 @@ package "domain.sales" {
     + subTotalHT: BigDecimal
     + totalVat: BigDecimal
     + totalTTC: BigDecimal
+    + discountTotal: BigDecimal
+    + loyaltyCredit: BigDecimal
     + paymentMode: PaymentMode
-    + status: String
-    + recalculateTotals()
+    + status: SaleStatus
+    + recalculateTotals(lines: List<SaleLine>)
   }
 
   class SaleLine <<Entity>> {
     + saleId: String
     + productId: String
+    + productName: String
     + unitPriceHT: BigDecimal
     + quantity: BigDecimal
     + weightKg: BigDecimal
     + lineVat: BigDecimal
     + lineTotal: BigDecimal
     + discountAmount: BigDecimal
+    + recomputeTotals()
   }
 
   class Receipt <<Entity>> {
@@ -218,10 +210,15 @@ package "domain.sales" {
   }
 }
 
-package "domain.promotion" {
+package "domain.promotion" as domain_promo_pkg {
   enum PromotionEffect {
     IMMEDIATE_DISCOUNT
     LOYALTY_POT
+  }
+
+  enum PromotionRuleType {
+    BUY_X_GET_Y
+    PERCENT_ON_NTH
   }
 
   abstract class Promotion <<Entity>> {
@@ -230,7 +227,6 @@ package "domain.promotion" {
     + startDate: LocalDate
     + endDate: LocalDate
     + effect: PromotionEffect
-    + appliesTo(productId: String): boolean
     + computeDiscount(lines: List<SaleLine>): BigDecimal
   }
 
@@ -243,28 +239,23 @@ package "domain.promotion" {
     + nthItem: int
     + percentDiscount: BigDecimal
   }
-}
 
-package "domain.statistics" {
-  interface StatisticProvider {
-    + key(): String
-    + compute(period: DateRange): StatisticResult
-  }
-
-  class DateRange {
+  class PromotionRule <<Entity>> {
+    + name: String
+    + productId: String
     + startDate: LocalDate
     + endDate: LocalDate
-  }
-
-  class StatisticResult {
-    + title: String
-    + value: BigDecimal
-    + asTable(): String
-    + asChartData(): String
+    + renewable: boolean
+    + effect: PromotionEffect
+    + type: PromotionRuleType
+    + buyQty: int
+    + freeQty: int
+    + nthItem: int
+    + percentDiscount: BigDecimal
   }
 }
 
-package "service" {
+package "service" as service_pkg {
   class InventoryService <<Service>> {
     + createProduct(product: Product)
     + updateProduct(product: Product)
@@ -272,16 +263,23 @@ package "service" {
     + addStock(productId: String, storeId: String, qty: BigDecimal)
     + removeStock(productId: String, storeId: String, qty: BigDecimal)
     + getStockAcrossStores(productId: String): List<InventoryItem>
-    + detectLowStock(): List<StockAlert>
+    + detectLowStockAlerts(): List<String>
   }
 
   class StaffService <<Service>> {
     + createEmployee(employee: Employee)
     + updateEmployee(employee: Employee)
     + deactivateEmployee(employeeId: String)
-    + requestLeave(leave: LeaveRequest)
-    + optimizeSchedule(storeId: String, week: LocalDate): List<Shift>
-    + forecastUnderstaffing(monthsAhead: int): List<StaffingAlert>
+  }
+
+  class AbsenceService <<Service>> {
+    + recordAbsence(badgeNumber: String, date: LocalDate, type: String, note: String)
+    + listAbsences(activeOnly: boolean): List<StaffAbsence>
+  }
+
+  class ScheduleService <<Service>> {
+    + generateWeeklySchedule(anyDateInWeek: LocalDate, minimumStaffPerDay: int): List<WorkShift>
+    + forecastStaffingAlerts(monthsAhead: int, minimumStaffPerDay: int): List<String>
   }
 
   class CustomerService <<Service>> {
@@ -292,56 +290,69 @@ package "service" {
     + creditLoyalty(cardNumber: String, amount: BigDecimal)
   }
 
+  class PromotionCatalogService <<Service>> {
+    + createPromotion(...)
+    + listPromotions(activeOnly: boolean): List<PromotionRule>
+    + listActivePromotionsAt(date: LocalDate): List<PromotionRule>
+  }
+
   class PromotionService <<Service>> {
-    + createPromotion(promo: Promotion)
-    + updatePromotion(promo: Promotion)
-    + deactivatePromotion(promoId: String)
-    + getActivePromotions(at: LocalDate): List<Promotion>
-    + applyPromotions(sale: Sale): BigDecimal
+    + applyPromotions(sale: Sale, lines: List<SaleLine>, customer: Customer): PromotionComputation
+  }
+
+  class PromotionComputation {
+    + immediateDiscount: BigDecimal
+    + loyaltyCredit: BigDecimal
+    + appliedPromotions: List<String>
   }
 
   class FastCheckoutService <<Service>> {
     + validateScannedWeight(product: Product, measuredKg: BigDecimal): boolean
-    + requestCashierHelp(posId: String, reason: String)
+    + requestCashierHelp(posId: String, reason: String): String
   }
 
   class ReceiptService <<Service>> {
-    + buildReceipt(sale: Sale): Receipt
-    + print(receipt: Receipt)
-    + email(receipt: Receipt, email: String)
+    + buildReceipt(sale: Sale, lines: List<SaleLine>, customer: Customer, promotions: PromotionComputation): Receipt
+    + print(receipt: Receipt): String
+    + email(receipt: Receipt, email: String): String
   }
 
   class SalesService <<Service>> {
     + startSale(posId: String, cashierBadge: String, customerCard: String): Sale
     + addLineByBarcode(saleId: String, barcode: String, qty: BigDecimal)
     + addWeightedLine(saleId: String, productType: ProductType, weightKg: BigDecimal)
-    + reduceLineQuantity(saleId: String, lineId: String, qty: BigDecimal)
-    + removeLine(saleId: String, lineId: String)
-    + changePaymentMode(saleId: String, mode: PaymentMode)
     + finalizeSale(saleId: String): Receipt
   }
 
   class StatisticsService <<Service>> {
-    + listAvailableStats(): List<String>
-    + compute(statKey: String, period: DateRange): StatisticResult
-    + compare(statKey: String, p1: DateRange, p2: DateRange): List<StatisticResult>
-    + registerCustom(provider: StatisticProvider)
-    + sendByEmail(result: StatisticResult, email: String)
+    + listAvailableStats()
+    + compute(statId: String, start: LocalDate, end: LocalDate): BigDecimal
+    + compare(...)
+    + registerProductSalesStatistic(...)
+    + registerPromotionSalesStatistic(...)
+  }
+
+  class MailOutboxService <<Service>> {
+    + sendMail(to: String, subject: String, body: String): String
   }
 
   class SeedDataService <<Service>> {
     + loadDefaultData(): void
   }
+
+  class SimplePdfService <<Service>>
 }
 
-package "persistence" {
+package "persistence" as persistence_pkg {
   interface Repository<T> {
     + create(entity: T)
     + update(entity: T)
-    + findById(id: String): T
+    + findById(id: String): Optional<T>
     + findAll(activeOnly: boolean): List<T>
     + searchByName(partial: String): List<T>
   }
+
+  abstract class AbstractTextRepository<T extends BaseEntity>
 
   class TextFileDatabase <<Singleton>> {
     + basePath: String
@@ -350,30 +361,25 @@ package "persistence" {
     + appendLine(fileName: String, line: String)
   }
 
+  class DelimitedText <<Utility>>
   class ProductRepository
   class InventoryRepository
   class EmployeeRepository
-  class ContractRepository
-  class LeaveRepository
-  class ShiftRepository
+  class AbsenceRepository
+  class WorkShiftRepository
   class CustomerRepository
-  class LoyaltyRepository
+  class PromotionRuleRepository
   class SaleRepository
   class SaleLineRepository
   class ReceiptRepository
-  class PromotionRepository
-  class StatisticConfigRepository
 }
 
-package "ui.mvc" {
+package "ui.mvc" as ui_pkg {
+  class Branding <<Utility>>
+  class MiniCalculatorDialog
+
   class MainMenuView <<View>>
-  class MainMenuController <<Controller>> {
-    + openStockModule()
-    + openStaffModule()
-    + openCustomerModule()
-    + openPOSModule(posId: String)
-    + openStatsModule()
-  }
+  class MainMenuController <<Controller>>
 
   class StockView <<View>>
   class StockController <<Controller>>
@@ -385,13 +391,13 @@ package "ui.mvc" {
   class CustomerController <<Controller>>
 
   class POSView <<View>>
-  class POSController <<Controller>> {
-    + startSale()
-    + scanBarcode()
-    + addWeightedProduct()
-    + callForHelp()
-    + finalizeSale()
-  }
+  class POSController <<Controller>>
+
+  class SelfCheckoutView <<View>>
+  class SelfCheckoutController <<Controller>>
+
+  class PromotionView <<View>>
+  class PromotionController <<Controller>>
 
   class StatsView <<View>>
   class StatsController <<Controller>>
@@ -401,24 +407,18 @@ BaseEntity ..|> Activable
 
 Product --|> BaseEntity
 InventoryItem --|> BaseEntity
-StockAlert --|> BaseEntity
 Store --|> BaseEntity
-
 Employee --|> BaseEntity
-WorkContract --|> BaseEntity
-LeaveRequest --|> BaseEntity
-Shift --|> BaseEntity
-StaffingAlert --|> BaseEntity
-
+StaffAbsence --|> BaseEntity
+WorkShift --|> BaseEntity
 Customer --|> BaseEntity
 LoyaltyAccount --|> BaseEntity
-
 POS --|> BaseEntity
 Sale --|> BaseEntity
 SaleLine --|> BaseEntity
 Receipt --|> BaseEntity
-
 Promotion --|> BaseEntity
+PromotionRule --|> BaseEntity
 BuyXGetYPromotion --|> Promotion
 PercentOnNthPromotion --|> Promotion
 
@@ -426,36 +426,35 @@ Store "1" o-- "many" POS
 Store "1" o-- "many" InventoryItem
 Product "1" o-- "many" InventoryItem
 Employee "0..1" --> "0..*" Employee : supervisor
-Employee "1" o-- "1" WorkContract
-Employee "1" o-- "many" LeaveRequest
-Employee "1" o-- "many" Shift
+Employee "1" o-- "many" StaffAbsence
+Employee "1" o-- "many" WorkShift
 Customer "0..1" o-- "1" LoyaltyAccount
 Sale "1" o-- "1..*" SaleLine
 Sale "1" --> "1" POS
 Sale "1" --> "1" Employee : cashier
 Sale "1" --> "1" Customer
 Receipt "1" --> "1" Sale
+PromotionRule "0..*" --> "0..*" Product
 
-Promotion "0..*" --> "0..*" Product
-PromotionService --> PromotionRepository
-PromotionService --> LoyaltyRepository
+PromotionCatalogService --> PromotionRuleRepository
+PromotionService --> PromotionCatalogService
 PromotionService --> SaleLine
 
 InventoryService --> ProductRepository
 InventoryService --> InventoryRepository
-InventoryService --> StockAlert
 
 StaffService --> EmployeeRepository
-StaffService --> ContractRepository
-StaffService --> LeaveRepository
-StaffService --> ShiftRepository
+AbsenceService --> AbsenceRepository
+ScheduleService --> WorkShiftRepository
+ScheduleService --> StaffService
+ScheduleService --> AbsenceService
+ScheduleService --> SimplePdfService
+ScheduleService --> TextFileDatabase
 
 CustomerService --> CustomerRepository
-CustomerService --> LoyaltyRepository
 
 SalesService --> SaleRepository
 SalesService --> SaleLineRepository
-SalesService --> ProductRepository
 SalesService --> InventoryService
 SalesService --> PromotionService
 SalesService --> ReceiptService
@@ -464,75 +463,128 @@ SalesService --> FastCheckoutService
 
 ReceiptService --> ReceiptRepository
 
-StatisticsService --> StatisticConfigRepository
-StatisticsService --> StatisticProvider
 StatisticsService --> SaleRepository
+StatisticsService --> SaleLineRepository
+StatisticsService --> ReceiptRepository
 StatisticsService --> CustomerRepository
-StatisticsService --> LeaveRepository
+StatisticsService --> AbsenceService
 
-Repository <|.. ProductRepository
-Repository <|.. InventoryRepository
-Repository <|.. EmployeeRepository
-Repository <|.. ContractRepository
-Repository <|.. LeaveRepository
-Repository <|.. ShiftRepository
-Repository <|.. CustomerRepository
-Repository <|.. LoyaltyRepository
-Repository <|.. SaleRepository
-Repository <|.. SaleLineRepository
-Repository <|.. ReceiptRepository
-Repository <|.. PromotionRepository
-Repository <|.. StatisticConfigRepository
+MailOutboxService --> TextFileDatabase
+SeedDataService --> InventoryService
+SeedDataService --> CustomerService
+SeedDataService --> StaffService
+SeedDataService --> AbsenceService
+SeedDataService --> ScheduleService
+
+Repository <|.. AbstractTextRepository
+AbstractTextRepository <|.. ProductRepository
+AbstractTextRepository <|.. InventoryRepository
+AbstractTextRepository <|.. EmployeeRepository
+AbstractTextRepository <|.. AbsenceRepository
+AbstractTextRepository <|.. WorkShiftRepository
+AbstractTextRepository <|.. CustomerRepository
+AbstractTextRepository <|.. PromotionRuleRepository
+AbstractTextRepository <|.. SaleRepository
+AbstractTextRepository <|.. SaleLineRepository
+AbstractTextRepository <|.. ReceiptRepository
+AbstractTextRepository ..> DelimitedText
 
 Repository ..> TextFileDatabase : persistance fichier texte
 
-MainMenuController --> StockController
-MainMenuController --> StaffController
-MainMenuController --> CustomerController
-MainMenuController --> POSController
-MainMenuController --> StatsController
+MainMenuController -down-> StockController
+MainMenuController -down-> StaffController
+MainMenuController -down-> CustomerController
+MainMenuController -down-> POSController
+MainMenuController -down-> SelfCheckoutController
+MainMenuController -down-> PromotionController
+MainMenuController -down-> StatsController
 
 StockController --> InventoryService
 StaffController --> StaffService
+StaffController --> AbsenceService
+StaffController --> ScheduleService
 CustomerController --> CustomerService
 POSController --> SalesService
-POSController --> FastCheckoutService
+SelfCheckoutController --> SalesService
+SelfCheckoutController --> InventoryService
+PromotionController --> PromotionCatalogService
 StatsController --> StatisticsService
+StatsController --> MailOutboxService
 
 MainMenuView --> MainMenuController
 StockView --> StockController
 StaffView --> StaffController
 CustomerView --> CustomerController
 POSView --> POSController
+SelfCheckoutView --> SelfCheckoutController
+PromotionView --> PromotionController
 StatsView --> StatsController
 
-ApplicationContext --> MainMenuController
-ApplicationContext --> TextFileDatabase
-ApplicationContext --> SeedDataService
+MainMenuView ..> Branding
+StockView ..> Branding
+StaffView ..> Branding
+CustomerView ..> Branding
+POSView ..> Branding
+SelfCheckoutView ..> Branding
+PromotionView ..> Branding
+StatsView ..> Branding
+POSView ..> MiniCalculatorDialog
+SelfCheckoutView ..> MiniCalculatorDialog
 
-MainMenuController -[hidden]- StockController
-StockController -[hidden]- StaffController
-StaffController -[hidden]- CustomerController
-CustomerController -[hidden]- POSController
-POSController -[hidden]- StatsController
+ApplicationContext -down-> MainMenuController
+ApplicationContext -down-> TextFileDatabase
+ApplicationContext -down-> InventoryService
+ApplicationContext -down-> StaffService
+ApplicationContext -down-> AbsenceService
+ApplicationContext -down-> ScheduleService
+ApplicationContext -down-> CustomerService
+ApplicationContext -down-> PromotionCatalogService
+ApplicationContext -down-> PromotionService
+ApplicationContext -down-> FastCheckoutService
+ApplicationContext -down-> ReceiptService
+ApplicationContext -down-> SalesService
+ApplicationContext -down-> StatisticsService
+ApplicationContext -down-> MailOutboxService
+ApplicationContext -down-> SeedDataService
 
-ProductRepository -[hidden]- InventoryRepository
-InventoryRepository -[hidden]- EmployeeRepository
-EmployeeRepository -[hidden]- ContractRepository
-ContractRepository -[hidden]- LeaveRepository
-LeaveRepository -[hidden]- ShiftRepository
-ShiftRepository -[hidden]- CustomerRepository
-CustomerRepository -[hidden]- LoyaltyRepository
-LoyaltyRepository -[hidden]- SaleRepository
-SaleRepository -[hidden]- SaleLineRepository
-SaleLineRepository -[hidden]- ReceiptRepository
-ReceiptRepository -[hidden]- PromotionRepository
-PromotionRepository -[hidden]- StatisticConfigRepository
+LeadelMarcheApp --> ApplicationContext
+LeadelMarcheApp --> MainMenuController
 
+' ===== Layout control (compact vertical / rendu plus carre)
+' -- ancrage des packages en grille verticale
+app_pkg -[hidden]down- common_pkg
+common_pkg -[hidden]down- service_pkg
+service_pkg -[hidden]down- persistence_pkg
+persistence_pkg -[hidden]down- ui_pkg
+
+common_pkg -[hidden]left- domain_inventory_pkg
+domain_inventory_pkg -[hidden]down- domain_people_pkg
+domain_people_pkg -[hidden]down- domain_customer_pkg
+domain_customer_pkg -[hidden]down- domain_sales_pkg
+domain_sales_pkg -[hidden]down- domain_promo_pkg
+domain_promo_pkg -[hidden]right- persistence_pkg
+
+' -- ancrage vertical interne
+LeadelMarcheApp -[hidden]down- ApplicationContext
 ApplicationContext -[hidden]down- MainMenuController
-MainMenuController -[hidden]down- SalesService
-SalesService -[hidden]down- SaleRepository
-SaleRepository -[hidden]right- TextFileDatabase
+
+InventoryService -[hidden]down- ScheduleService
+ScheduleService -[hidden]down- SalesService
+SalesService -[hidden]down- StatisticsService
+StatisticsService -[hidden]down- MailOutboxService
+
+ProductRepository -[hidden]down- EmployeeRepository
+EmployeeRepository -[hidden]down- CustomerRepository
+CustomerRepository -[hidden]down- SaleRepository
+SaleRepository -[hidden]down- ReceiptRepository
+
+MainMenuController -[hidden]down- StockController
+StockController -[hidden]down- StaffController
+StaffController -[hidden]down- CustomerController
+CustomerController -[hidden]down- POSController
+POSController -[hidden]down- SelfCheckoutController
+SelfCheckoutController -[hidden]down- PromotionController
+PromotionController -[hidden]down- StatsController
 
 note right of BaseEntity
 DELETE logique:

@@ -114,7 +114,19 @@ public class StaffView extends JFrame {
         content.add(tabs, BorderLayout.CENTER);
         content.add(logPanel, BorderLayout.SOUTH);
 
-        add(Branding.createHeader("Module Personnel & Horaires"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Personnel & Horaires",
+                "Aide - Personnel et planning",
+                "1) Onglet Personnel: CRUD employes + contrat.\n"
+                    + "2) Planning semaine: absences, generation, saisie manuelle.\n"
+                    + "3) Frise: glisser les barres pour ajuster debut/fin.\n"
+                    + "4) Clic droit sur une ligne pour ajouter/supprimer un horaire.\n"
+                    + "5) Besoins: graphe dynamique + bouton Gestion graphe besoin.\n"
+                    + "6) Enregistrer horaires seulement quand les lignes ne sont pas rouges."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 
@@ -518,6 +530,7 @@ public class StaffView extends JFrame {
         private int dragOriginMinute;
         private int dragOriginStartMinute;
         private int dragOriginEndMinute;
+        // Editeur timeline borne aux horaires d'ouverture et aligne sur des quarts d'heure.
         private static final int SNAP_MINUTES = 15;
         private static final int OPEN_MINUTE = 8 * 60;
         private static final int CLOSE_MINUTE = 20 * 60;
@@ -658,6 +671,7 @@ public class StaffView extends JFrame {
             TimelineLayout layout = timelineLayout();
             int x1 = xForMinute(layout, minutes(start));
             int x2 = xForMinute(layout, minutes(end));
+            // Bords: redimensionnement, milieu: deplacement de toute la plage.
             if (Math.abs(x - x1) <= HANDLE_WIDTH + 3) {
                 return DragMode.LEFT;
             }
@@ -699,6 +713,7 @@ public class StaffView extends JFrame {
                     return;
                 }
                 ShiftRow row = rows.get(rowIndex);
+                // Clic droit sur la ligne: menu contextuel ajouter/supprimer.
                 if (event.isPopupTrigger() || MouseEvent.BUTTON3 == event.getButton()) {
                     showMenu(row, event.getX(), event.getY());
                     return;
@@ -752,10 +767,12 @@ public class StaffView extends JFrame {
                 } else if (dragMode == DragMode.RIGHT) {
                     endMinute = Math.max(selectedMinute, startMinute + SNAP_MINUTES);
                 } else if (dragMode == DragMode.BODY) {
+                    // Glissement du corps: conserve la duree et translate le bloc complet.
                     int duration = dragOriginEndMinute - dragOriginStartMinute;
                     int delta = selectedMinute - dragOriginMinute;
                     startMinute = dragOriginStartMinute + delta;
                     endMinute = dragOriginEndMinute + delta;
+                    // Bornage strict dans la fenetre 08:00-20:00.
                     if (startMinute < OPEN_MINUTE) {
                         startMinute = OPEN_MINUTE;
                         endMinute = startMinute + duration;
@@ -893,6 +910,7 @@ public class StaffView extends JFrame {
                 int x = layout.left + i * groupWidth;
                 int value = Math.max(0, Math.min(maxValue, slot.value));
                 int height = value == 0 ? 4 : Math.max(4, (int) Math.round(layout.height * (value / (double) maxValue)));
+                // Vert = besoin positif ; jaune = pas de besoin sur le quart d'heure.
                 g.setColor(value > 0 ? new Color(53, 142, 88) : new Color(222, 192, 59));
                 g.fillRect(x, baseY - height, barWidth, height);
 
@@ -935,6 +953,7 @@ public class StaffView extends JFrame {
             NeedChartLayout layout = chartLayout();
             int baseY = layout.top + layout.height;
             int clampedY = Math.max(layout.top, Math.min(baseY, y));
+            // Plus on monte, plus le besoin augmente (mapping vertical -> valeur).
             double ratio = (baseY - clampedY) / (double) layout.height;
             return Math.max(0, Math.min(maxValue, (int) Math.round(ratio * maxValue)));
         }
@@ -962,6 +981,7 @@ public class StaffView extends JFrame {
                 if (index < 0) {
                     return;
                 }
+                // Drag continu: on ecrit la valeur directement dans la barre survolee.
                 slots.get(index).value = valueAt(event.getY());
                 repaint();
             }

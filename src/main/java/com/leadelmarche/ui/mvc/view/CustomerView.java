@@ -66,7 +66,17 @@ public class CustomerView extends JFrame {
         content.add(north, BorderLayout.NORTH);
         content.add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Clients"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Clients",
+                "Aide - Module Clients",
+                "1) Saisir prenom, nom, carte, email, code postal puis Ajouter Client.\n"
+                    + "2) Pour modifier/desactiver: saisir ID client puis action.\n"
+                    + "3) Recherche partielle possible sur nom/prenom/identifiant.\n"
+                    + "4) Le client Anonyme est gere automatiquement par le systeme."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

@@ -100,7 +100,18 @@ public class POSView extends JFrame {
         content.add(north, BorderLayout.NORTH);
         content.add(new JScrollPane(cartArea), BorderLayout.CENTER);
 
-        add(Branding.createHeader("Module Point de Vente"), BorderLayout.NORTH);
+        add(
+            Branding.createHeader(
+                "Module Point de Vente",
+                "Aide - Point de Vente",
+                "1) Demarrer Vente (point de vente, badge, carte client optionnelle).\n"
+                    + "2) Ajouter lignes par code-barres ou produit pese.\n"
+                    + "3) Utiliser Calculatrice si besoin.\n"
+                    + "4) Changer le mode de paiement avant finalisation.\n"
+                    + "5) Finaliser puis imprimer/envoyer le ticket client."
+            ),
+            BorderLayout.NORTH
+        );
         add(content, BorderLayout.CENTER);
     }
 

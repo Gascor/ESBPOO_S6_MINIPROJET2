@@ -6,9 +6,11 @@ import java.awt.Font;
 import java.awt.Image;
 import java.io.File;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public final class Branding {
@@ -22,6 +24,10 @@ public final class Branding {
     }
 
     public static JPanel createHeader(String title) {
+        return createHeader(title, "Aide", "");
+    }
+
+    public static JPanel createHeader(String title, String helpTitle, String helpText) {
         JPanel header = new JPanel(new BorderLayout(10, 0));
         header.setBorder(
             BorderFactory.createCompoundBorder(
@@ -43,6 +49,19 @@ public final class Branding {
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
         header.add(titleLabel, BorderLayout.CENTER);
+
+        // Aide contextuelle centralisee: chaque ecran peut injecter ses consignes sans dupliquer l'UI.
+        if (helpText != null && !helpText.isBlank()) {
+            JButton helpButton = new JButton("Aide");
+            helpButton.setToolTipText("Afficher les consignes de cet ecran");
+            helpButton.addActionListener(e -> JOptionPane.showMessageDialog(
+                header,
+                helpText,
+                (helpTitle == null || helpTitle.isBlank()) ? "Aide" : helpTitle,
+                JOptionPane.INFORMATION_MESSAGE
+            ));
+            header.add(helpButton, BorderLayout.EAST);
+        }
         return header;
     }
 

@@ -336,6 +336,7 @@ public class StaffController {
     }
 
     private void validatePlanningRows() {
+        // Evite les boucles de validation quand on rafraichit le modele depuis le code.
         if (planningRefreshInProgress) {
             return;
         }
@@ -353,6 +354,7 @@ public class StaffController {
         double totalPaidHolidayCredit = 0;
         boolean hasInvalid = false;
         for (ShiftRow row : view.planningTableModel().rows()) {
+            // Champs calcules a chaque passe (pause, heures payees, statut couleur).
             row.breakPlan = "";
             row.paidHours = "";
             row.valid = true;
@@ -362,6 +364,7 @@ public class StaffController {
                     row.status = row.absenceType + ": supprimer les horaires";
                     hasInvalid = true;
                 } else {
+                    // Un ferie ferme reste credite en heures meme sans plage horaire.
                     if (scheduleService.isPaidClosedHoliday(row.date)) {
                         row.status = row.absenceType + " + ferie ferme";
                         row.paidHours = formatHours(paidHolidayCreditHours) + "h";
@@ -379,6 +382,7 @@ public class StaffController {
                     row.status = scheduleService.isPaidClosedHoliday(row.date) ? "Jour ferie ferme" : "Magasin ferme";
                     hasInvalid = true;
                 } else {
+                    // Le dimanche ferme est traite comme repos hebdomadaire (pas "absence non payee").
                     if (scheduleService.isPaidClosedHoliday(row.date)) {
                         row.status = "Ferie ferme (compte en heures)";
                         row.paidHours = formatHours(paidHolidayCreditHours) + "h";
@@ -424,6 +428,7 @@ public class StaffController {
 
         double overtimeHours = Math.max(0, parseDouble(view.planningOvertimeHoursField().getText().trim(), 0));
         double allowedHours = contractHours + overtimeHours;
+        // Controle global de la semaine (contrat + heures supp autorisees).
         if (totalHours > allowedHours + 0.01) {
             hasInvalid = true;
             for (ShiftRow row : view.planningTableModel().rows()) {
@@ -437,6 +442,7 @@ public class StaffController {
         planningRefreshInProgress = true;
         view.planningTableModel().refreshRows();
         planningRefreshInProgress = false;
+        // Synchronise la vue timeline et le graphe de besoin apres toute modification.
         view.timelinePanel().setRows(view.planningTableModel().rows());
         view.planningStatusLabel().setForeground(hasInvalid ? new Color(155, 45, 45) : new Color(45, 90, 55));
         view.planningStatusLabel().setText(
@@ -507,6 +513,8 @@ public class StaffController {
                     scheduleService.saveManualShift(badge, row.date, parseTime(row.startText), parseTime(row.endText));
                 } else {
                     scheduleService.clearShift(badge, row.date);
+                    // Si dimanche ferme sans horaire: on enregistre un "CONGE" de repos hebdomadaire
+                    // pour ne pas penaliser artificiellement la semaine.
                     boolean weeklyRest = row.date.getDayOfWeek() == DayOfWeek.SUNDAY && !scheduleService.isStoreOpen(row.date);
                     boolean restAlreadyRecorded = existingAbsences.stream()
                         .anyMatch(absence -> row.date.equals(absence.getAbsenceDate()));
@@ -526,6 +534,7 @@ public class StaffController {
     private void updateNeedsChart(LocalDate monday) {
         int minStaff = parseInt(view.minStaffField().getText().trim(), 3);
         String selectedBadge = view.selectedPlanningBadge();
+        // "Autres employes" = shifts deja persistes, hors employe actuellement edite.
         List<WorkShift> persistedOtherShifts = scheduleService.getWeekSchedule(monday).stream()
             .filter(WorkShift::isActive)
             .filter(shift -> selectedBadge.isBlank() || !selectedBadge.equalsIgnoreCase(shift.getBadgeNumber()))
@@ -536,6 +545,7 @@ public class StaffController {
             if (!scheduleService.isStoreOpen(date) && !hasManualNeedProfile(date)) {
                 continue;
             }
+            // Resolution au quart d'heure pour coller au pilotage fin des besoins.
             for (int minute = 8 * 60; minute < 20 * 60; minute += 15) {
                 LocalTime slotStart = LocalTime.of(minute / 60, minute % 60);
                 LocalTime slotEnd = slotStart.plusMinutes(15);
@@ -580,6 +590,7 @@ public class StaffController {
     private int requiredStaffForChart(LocalDate date, LocalTime slotStart, int minStaff) {
         String key = needKey(date, slotStart.getHour() * 60 + slotStart.getMinute());
         Integer manualValue = manualNeeds.get(key);
+        // Le graphe manuel prime sur l'estimation automatique quand il existe.
         if (manualValue != null) {
             return manualValue;
         }
